@@ -54,10 +54,10 @@ def print_summary(results):
     # Status
     overall_success = all(results.values())
     if overall_success:
-        print(f"\n🎉 ALL TESTS PASSED! The codebase is ready for Phase 3.")
+        print(f"\n🎉 ALL TESTS PASSED!")
     else:
         print(f"\n⚠️  Some tests failed. Please review the output above.")
-        print(f"   Fix any failing tests before proceeding to Phase 3.")
+        print(f"   Fix any failing tests.")
     
     print("=" * 80)
     return overall_success
@@ -66,7 +66,7 @@ def print_summary(results):
 def run_all_tests():
     """Run all test suites and return overall success status."""
     print_header("INSTAGRAM AUTOMATION PROJECT - COMPREHENSIVE TEST SUITE")
-    print("🧪 Running all tests for Phase 2 modules...")
+    print("🧪 Running all tests of modules...")
     print("   This will test Logger, Comment Generation, Notifier, and Integration")
     
     results = {}
