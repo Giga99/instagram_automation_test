@@ -1,4 +1,15 @@
-playwright==1.40.0
-openai==1.3.7
-python-dotenv==1.0.0
-requests==2.31.0 
+# Instagram Automation Project Dependencies
+
+# Core dependencies
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# OpenAI integration for comment generation  
+openai>=1.0.0
+
+# Browser automation (Playwright)
+playwright>=1.40.0
+
+# Optional: Additional useful packages
+beautifulsoup4>=4.12.0  # For HTML parsing if needed
+urllib3>=2.0.0          # For robust HTTP handling 

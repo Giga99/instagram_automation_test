@@ -1,120 +1,211 @@
 #!/usr/bin/env python3
 """
-Comprehensive Test Runner for Instagram Automation Project
+Instagram Automation Test Runner
 
-Runs all test suites and provides a detailed summary report:
-- Logger module tests
-- Comment generation module tests  
-- Notifier module tests
-- Integration tests
+Runs all test modules and provides comprehensive reporting.
+Tests include:
+- Phase 1: Logger and Comment Generation modules
+- Phase 2: Notifier module  
+- Phase 3: Profile Manager, Poster, and Main Orchestrator modules
+- Integration tests across all phases
+
+Run this script to execute the complete test suite.
 """
 
-import sys
+import importlib
 import os
+import sys
+import unittest
 
-# Add project root to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Import individual test runners
-from tests.test_logger import run_logger_tests
-from tests.test_comment_gen import run_comment_gen_tests
-from tests.test_notifier import run_notifier_tests
-from tests.test_integration import run_integration_tests
+# Add project root to Python path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
 
-def print_header(title):
-    """Print a formatted header for test sections."""
-    print("\n" + "🔥" * 60)
-    print(f"🚀 {title}")
-    print("🔥" * 60)
+def run_test_module(module_name, display_name):
+    """
+    Run a specific test module and return results.
+    
+    Args:
+        module_name: Name of the test module to import
+        display_name: Human-readable name for display
+        
+    Returns:
+        Tuple of (success_count, total_count, success_bool)
+    """
+    try:
+        # Import the test module
+        test_module = importlib.import_module(f'tests.{module_name}')
+
+        # Create test suite
+        loader = unittest.TestLoader()
+        suite = loader.loadTestsFromModule(test_module)
+
+        # Run tests
+        runner = unittest.TextTestRunner(verbosity=0, stream=open(os.devnull, 'w'))
+        result = runner.run(suite)
+
+        # Calculate results
+        total_tests = result.testsRun
+        failed_tests = len(result.failures) + len(result.errors)
+        success_tests = total_tests - failed_tests
+        success_rate = (success_tests / total_tests * 100) if total_tests > 0 else 0
+
+        return success_tests, total_tests, len(result.failures) == 0 and len(result.errors) == 0, success_rate
+
+    except Exception as e:
+        print(f"❌ Error running {display_name}: {str(e)}")
+        return 0, 0, False, 0
 
 
-def print_summary(results):
-    """Print a comprehensive test summary."""
-    print("\n" + "=" * 80)
+def main():
+    """Main test runner function."""
+
+    print("🔥" * 70)
+    print("🔥" * 6)
+    print("🚀 INSTAGRAM AUTOMATION PROJECT - COMPREHENSIVE TEST SUITE")
+    print("🔥" * 70)
+    print("🔥" * 6)
+    print("🧪 Running all tests of modules...")
+    print("   This will test all Phase 1-3 modules plus Integration tests")
+    print()
+    print("🔥" * 70)
+    print("🔥" * 6)
+
+    # Test modules configuration
+    test_modules = [
+        ('test_logger', 'Logger Module', '📝 LOGGER MODULE TESTS'),
+        ('test_comment_gen', 'Comment Generation Module', '🤖 COMMENT GENERATION MODULE TESTS'),
+        ('test_notifier', 'Notifier Module', '📱 NOTIFIER MODULE TESTS'),
+        ('test_profile_manager', 'Profile Manager Module', '🔐 PROFILE MANAGER MODULE TESTS'),
+        ('test_poster', 'Poster Module', '💬 POSTER MODULE TESTS'),
+        ('test_integration', 'Integration Tests', '🔗 INTEGRATION TESTS'),
+    ]
+
+    results = {}
+    total_success = 0
+    total_tests = 0
+    all_passed = True
+
+    # Run each test module
+    for module_name, display_name, header in test_modules:
+        print(header)
+        print("🔥" * 70)
+        print("🔥" * 6)
+        print(f"🧪 Running {display_name} Tests...")
+
+        # Run the actual test module with full output
+        try:
+            test_module = importlib.import_module(f'tests.{module_name}')
+            loader = unittest.TestLoader()
+            suite = loader.loadTestsFromModule(test_module)
+            runner = unittest.TextTestRunner(verbosity=2)
+            result = runner.run(suite)
+
+            # Calculate results
+            module_total = result.testsRun
+            module_failed = len(result.failures) + len(result.errors)
+            module_success = module_total - module_failed
+            module_success_rate = (module_success / module_total * 100) if module_total > 0 else 0
+            module_passed = len(result.failures) == 0 and len(result.errors) == 0
+
+            results[display_name] = {
+                'success': module_success,
+                'total': module_total,
+                'passed': module_passed,
+                'rate': module_success_rate
+            }
+
+            total_success += module_success
+            total_tests += module_total
+
+            if not module_passed:
+                all_passed = False
+
+            print("=" * 50)
+            print(f"📊 {display_name} Tests Summary:")
+            print(f"   • Tests Run: {module_total}")
+            print(f"   • Failures: {module_failed}")
+            print(f"   • Errors: 0")
+            print(f"   • Success Rate: {module_success_rate:.1f}%")
+            print()
+
+        except Exception as e:
+            print(f"❌ Error running {display_name}: {str(e)}")
+            results[display_name] = {
+                'success': 0,
+                'total': 0,
+                'passed': False,
+                'rate': 0
+            }
+            all_passed = False
+
+        print("🔥" * 70)
+        print("🔥" * 6)
+
+    # Final summary
+    overall_success_rate = (total_success / total_tests * 100) if total_tests > 0 else 0
+
+    print("=" * 80)
     print("📊 COMPREHENSIVE TEST SUMMARY")
     print("=" * 80)
-    
-    total_modules = len(results)
-    passed_modules = sum(1 for success in results.values() if success)
-    
-    # Overall results
-    print(f"\n🎯 Overall Results:")
-    print(f"   • Total Test Modules: {total_modules}")
-    print(f"   • Modules Passed: {passed_modules}")
-    print(f"   • Modules Failed: {total_modules - passed_modules}")
-    print(f"   • Overall Success Rate: {(passed_modules / total_modules * 100):.1f}%")
-    
-    # Detailed results
-    print(f"\n📋 Detailed Results:")
-    for module, success in results.items():
-        status = "✅ PASSED" if success else "❌ FAILED"
-        print(f"   • {module}: {status}")
-    
-    # Status
-    overall_success = all(results.values())
-    if overall_success:
-        print(f"\n🎉 ALL TESTS PASSED!")
+    print()
+    print("🎯 Overall Results:")
+    print(f"   • Total Test Modules: {len(test_modules)}")
+    print(f"   • Total Tests Run: {total_tests}")
+    print(f"   • Total Successful: {total_success}")
+    print(f"   • Overall Success Rate: {overall_success_rate:.1f}%")
+    print()
+    print("📋 Module Results:")
+
+    passed_modules = 0
+    for display_name, result in results.items():
+        status = "✅ PASSED" if result['passed'] else "❌ FAILED"
+        print(f"   • {display_name}: {status}")
+        if result['passed']:
+            passed_modules += 1
+
+    print()
+    print("🏆 Phase Breakdown:")
+
+    # Phase 1 results
+    phase1_modules = ['Logger Module', 'Comment Generation Module']
+    phase1_passed = all(results.get(mod, {}).get('passed', False) for mod in phase1_modules)
+    phase1_status = "✅ PASSED" if phase1_passed else "❌ FAILED"
+    print(f"   • Phase 1 (Foundation): {phase1_status}")
+
+    # Phase 2 results  
+    phase2_modules = ['Notifier Module']
+    phase2_passed = all(results.get(mod, {}).get('passed', False) for mod in phase2_modules)
+    phase2_status = "✅ PASSED" if phase2_passed else "❌ FAILED"
+    print(f"   • Phase 2 (Notifications): {phase2_status}")
+
+    # Phase 3 results
+    phase3_modules = ['Profile Manager Module', 'Poster Module']
+    phase3_passed = all(results.get(mod, {}).get('passed', False) for mod in phase3_modules)
+    phase3_status = "✅ PASSED" if phase3_passed else "❌ FAILED"
+    print(f"   • Phase 3 (Browser Automation): {phase3_status}")
+
+    # Integration results
+    integration_passed = results.get('Integration Tests', {}).get('passed', False)
+    integration_status = "✅ PASSED" if integration_passed else "❌ FAILED"
+    print(f"   • Integration Tests: {integration_status}")
+
+    print()
+
+    if all_passed:
+        print("🎉 ALL TESTS PASSED!")
+        print("🚀 Instagram Automation Project is ready for production!")
     else:
-        print(f"\n⚠️  Some tests failed. Please review the output above.")
-        print(f"   Fix any failing tests.")
-    
+        print("⚠️ SOME TESTS FAILED!")
+        print("🔧 Please review the failed tests and fix any issues.")
+
     print("=" * 80)
-    return overall_success
+    print()
 
-
-def run_all_tests():
-    """Run all test suites and return overall success status."""
-    print_header("INSTAGRAM AUTOMATION PROJECT - COMPREHENSIVE TEST SUITE")
-    print("🧪 Running all tests of modules...")
-    print("   This will test Logger, Comment Generation, Notifier, and Integration")
-    
-    results = {}
-    
-    try:
-        # Run Logger Tests
-        print_header("LOGGER MODULE TESTS")
-        results["Logger Module"] = run_logger_tests()
-        
-    except Exception as e:
-        print(f"❌ Logger tests crashed: {e}")
-        results["Logger Module"] = False
-    
-    try:
-        # Run Comment Generation Tests
-        print_header("COMMENT GENERATION MODULE TESTS")
-        results["Comment Generation Module"] = run_comment_gen_tests()
-        
-    except Exception as e:
-        print(f"❌ Comment generation tests crashed: {e}")
-        results["Comment Generation Module"] = False
-    
-    try:
-        # Run Notifier Tests
-        print_header("NOTIFIER MODULE TESTS")
-        results["Notifier Module"] = run_notifier_tests()
-        
-    except Exception as e:
-        print(f"❌ Notifier tests crashed: {e}")
-        results["Notifier Module"] = False
-    
-    try:
-        # Run Integration Tests
-        print_header("INTEGRATION TESTS")
-        results["Integration Tests"] = run_integration_tests()
-        
-    except Exception as e:
-        print(f"❌ Integration tests crashed: {e}")
-        results["Integration Tests"] = False
-    
-    # Print comprehensive summary
-    overall_success = print_summary(results)
-    
-    return overall_success
+    # Return appropriate exit code
+    sys.exit(0 if all_passed else 1)
 
 
 if __name__ == "__main__":
-    success = run_all_tests()
-    
-    # Exit with appropriate code
-    sys.exit(0 if success else 1) 
+    main()
