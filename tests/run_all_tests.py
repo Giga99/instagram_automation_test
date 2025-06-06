@@ -4,9 +4,9 @@ Instagram Automation Test Runner
 
 Runs all test modules and provides comprehensive reporting.
 Tests include:
-- Phase 1: Logger and Comment Generation modules
-- Phase 2: Notifier module  
-- Phase 3: Profile Manager, Poster, and Main Orchestrator modules
+- Logger and Comment Generation modules
+- Notifier module  
+- Profile Manager, Poster, and Main Orchestrator modules
 - Integration tests across all phases
 
 Run this script to execute the complete test suite.

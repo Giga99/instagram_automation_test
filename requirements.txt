@@ -5,7 +5,8 @@ python-dotenv>=1.0.0
 requests>=2.31.0
 
 # OpenAI integration for comment generation  
-openai>=1.0.0
+openai>=1.51.0,<2.0.0
+httpx>=0.24.0,<0.28.0
 
 # Browser automation (Playwright)
 playwright>=1.40.0

@@ -3,13 +3,13 @@ Instagram Poster Module
 
 Handles posting comments to Instagram posts with optional simulation mode.
 """
-
+import os
 import time
 
 from playwright.sync_api import BrowserContext, Page, TimeoutError as PlaywrightTimeoutError
 
 # Configuration flag for simulation mode
-USE_REAL_INSTAGRAM = False  # Set to True when using real Instagram accounts
+USE_REAL_INSTAGRAM = os.getenv("USE_REAL_INSTAGRAM", False)  # Set to True in .env when using real Instagram accounts
 
 
 def post_comment(context: BrowserContext, comment_text: str, post_url: str = None, max_retries: int = 3) -> bool:

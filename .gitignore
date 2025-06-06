@@ -2,6 +2,7 @@
 
 .idea
 
+output
 tests/output
 
 .env
