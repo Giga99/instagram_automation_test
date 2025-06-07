@@ -87,6 +87,9 @@ def login_profile(playwright: Playwright, profile_id: str, username: str, passwo
             print(f"🌐 [{profile_id}] Navigating to Instagram...")
             page.goto("https://www.instagram.com/accounts/login/", timeout=30000)
 
+            # Handle cookies popup first
+            handle_cookies_popup(page, profile_id)
+
             # Wait for login form
             page.wait_for_selector('input[name="username"]', timeout=10000)
 
@@ -290,3 +293,51 @@ def get_profile_info(context: BrowserContext) -> Dict[str, Any]:
     finally:
         if 'page' in locals():
             page.close()
+
+
+def handle_cookies_popup(page: Page, profile_id: str) -> None:
+    """
+    Handles Instagram cookies consent popup if it appears.
+    
+    Args:
+        page: Playwright page instance
+        profile_id: Profile identifier for logging
+    """
+    try:
+        # Check for various cookie popup selectors that Instagram might use
+        cookie_selectors = [
+            'button[data-cookiebanner="accept_only_essential_cookie"]',  # Accept only essential
+            'button:has-text("Only allow essential cookies")',
+            'button:has-text("Accept")',
+            'button:has-text("Allow essential and optional cookies")',
+            '[data-testid="cookie-banner"] button',
+            '.cookie-banner button',
+            'button[class*="cookie"]',
+            'button:has-text("Decline optional cookies")',
+            'button:has-text("Allow all cookies")'
+        ]
+        
+        print(f"🍪 [{profile_id}] Checking for cookies popup...")
+        
+        # Wait a bit for popup to appear
+        time.sleep(2)
+        
+        # Try each selector to find and click the appropriate button
+        for selector in cookie_selectors:
+            try:
+                if page.locator(selector).is_visible(timeout=2000):
+                    print(f"🍪 [{profile_id}] Found cookies popup, clicking: {selector}")
+                    page.click(selector, timeout=3000)
+                    time.sleep(1)  # Wait for popup to disappear
+                    print(f"✅ [{profile_id}] Cookies popup handled")
+                    return
+            except PlaywrightTimeoutError:
+                continue
+            except Exception as e:
+                print(f"⚠️ [{profile_id}] Error with selector {selector}: {str(e)}")
+                continue
+        
+        print(f"ℹ️ [{profile_id}] No cookies popup found or already handled")
+        
+    except Exception as e:
+        print(f"⚠️ [{profile_id}] Error handling cookies popup: {str(e)}")
