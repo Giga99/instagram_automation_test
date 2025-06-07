@@ -25,7 +25,7 @@ from modules.poster import post_comment, simulate_post, USE_REAL_INSTAGRAM
 from modules.profile_manager import login_profile, close_context
 
 # Configuration
-TARGET_POST_URL = os.getenv("INSTAGRAM_TARGET_POST", "")  # Set this to your target Instagram post URL
+TARGET_POST_URL = os.getenv("INSTAGRAM_POST_URL", "")  # Set this to your target Instagram post URL
 HEADLESS_MODE = os.getenv("HEADLESS_MODE", "true").lower() == "true"
 COMMENT_PROMPT = os.getenv("COMMENT_PROMPT", "gym workout motivation")
 
@@ -173,7 +173,7 @@ def main():
 
     print("🚀 Instagram Automation Starting...")
     print(f"📅 Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"🎭 Simulation Mode: {'ON' if not USE_REAL_INSTAGRAM else 'OFF'}")
+    print(f"🎭 Simulation Mode: {'ON' if USE_REAL_INSTAGRAM else 'OFF'}")
     print(f"👤 Headless Mode: {'ON' if HEADLESS_MODE else 'OFF'}")
 
     # Ensure output directory exists
@@ -196,7 +196,7 @@ def main():
     # Check target post URL
     if not TARGET_POST_URL:
         print("⚠️ No target post URL set!")
-        print("💡 Set INSTAGRAM_TARGET_POST in your .env file")
+        print("💡 Set INSTAGRAM_POST_URL in your .env file")
         if USE_REAL_INSTAGRAM:
             print("❌ Cannot proceed without target post URL in real mode")
             return

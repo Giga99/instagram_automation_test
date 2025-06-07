@@ -185,7 +185,7 @@ InstagramAutomationTestProject/
 
 For testing without real Instagram interaction, the project includes a comprehensive simulation mode:
 
-- **Current Setting**: `USE_REAL_INSTAGRAM = False` in `modules/poster.py`
+- **Current Setting**: `USE_REAL_INSTAGRAM = False` in `.env`
 - **Simulation Behavior**: Comments are logged to console with realistic delays and success simulation
 - **Real Mode**: Set `USE_REAL_INSTAGRAM = True` when ready to use real accounts
 - **Safety Features**: Prevents accidental posting during development and testing
