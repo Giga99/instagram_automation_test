@@ -4,7 +4,6 @@ Profile Manager Module
 Handles browser context management and Instagram login functionality.
 """
 
-import os
 import time
 from typing import Optional, Dict, Any
 
@@ -23,10 +22,6 @@ def create_browser_context(playwright: Playwright, profile_id: str, headless: bo
     Returns:
         Configured BrowserContext
     """
-    # Create user data directory for profile isolation
-    user_data_dir = os.path.join("browser_profiles", profile_id)
-    os.makedirs(user_data_dir, exist_ok=True)
-
     # Launch browser with persistent context
     browser = playwright.chromium.launch(
         headless=headless,
@@ -316,12 +311,12 @@ def handle_cookies_popup(page: Page, profile_id: str) -> None:
             'button:has-text("Decline optional cookies")',
             'button:has-text("Allow all cookies")'
         ]
-        
+
         print(f"🍪 [{profile_id}] Checking for cookies popup...")
-        
+
         # Wait a bit for popup to appear
         time.sleep(2)
-        
+
         # Try each selector to find and click the appropriate button
         for selector in cookie_selectors:
             try:
@@ -336,8 +331,8 @@ def handle_cookies_popup(page: Page, profile_id: str) -> None:
             except Exception as e:
                 print(f"⚠️ [{profile_id}] Error with selector {selector}: {str(e)}")
                 continue
-        
+
         print(f"ℹ️ [{profile_id}] No cookies popup found or already handled")
-        
+
     except Exception as e:
         print(f"⚠️ [{profile_id}] Error handling cookies popup: {str(e)}")
