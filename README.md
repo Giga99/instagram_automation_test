@@ -157,10 +157,6 @@ InstagramAutomationTestProject/
 │   ├── poster.py               # Instagram comment posting (200+ lines)
 │   ├── logger.py               # Structured logging with atomic operations (100+ lines)
 │   └── notifier.py             # Telegram notifications (150+ lines)
-├── profiles/                    # Playwright user data directories
-│   ├── profile1/               # Browser data for account 1
-│   ├── profile2/               # Browser data for account 2
-│   └── profile3/               # Browser data for account 3
 ├── tests/                       # Comprehensive test suite (111 tests)
 │   ├── run_all_tests.py        # Test runner with detailed reporting
 │   ├── test_logger.py          # Logger module tests (19 tests)
@@ -311,28 +307,3 @@ Run specific tests with verbose output:
 ```bash
 python -m pytest tests/test_profile_manager.py::test_login_success -v -s
 ```
-
-## 🚀 Production Deployment
-
-The project is production-ready with the following considerations:
-
-1. **Environment Setup**: Ensure all dependencies are installed in production environment
-2. **Credential Management**: Use secure credential storage (not `.env` files in production)
-3. **Monitoring**: Implement log monitoring and alerting for the JSON/CSV output files
-4. **Scaling**: Consider rate limits when scaling to more profiles or posts
-5. **Maintenance**: Regular updates to handle Instagram UI changes
-
-## 📈 Future Enhancements
-
-- Support for additional social media platforms (Twitter, Facebook, TikTok)
-- Advanced comment templates with machine learning personalization
-- Scheduling and automation features with cron job integration
-- Enhanced error recovery mechanisms with intelligent retry strategies
-- Performance monitoring and analytics dashboard
-- Multi-language support for international accounts
-- Advanced browser fingerprinting protection
-- Headless mode optimization for server environments
-
----
-
-**⚠️ Disclaimer**: This tool is for educational and testing purposes. Ensure compliance with Instagram's Terms of Service and use responsibly with test accounts only. The developers are not responsible for any misuse or violations of platform policies.

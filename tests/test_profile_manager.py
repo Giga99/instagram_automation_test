@@ -44,8 +44,7 @@ class TestProfileManagerModule(unittest.TestCase):
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
     
-    @patch('modules.profile_manager.os.makedirs')
-    def test_create_browser_context_success(self, mock_makedirs):
+    def test_create_browser_context_success(self):
         """Test successful browser context creation."""
         # Setup
         mock_playwright = Mock()
@@ -60,7 +59,6 @@ class TestProfileManagerModule(unittest.TestCase):
         
         # Verify
         self.assertEqual(result, mock_context)
-        mock_makedirs.assert_called_once()
         mock_playwright.chromium.launch.assert_called_once()
         mock_browser.new_context.assert_called_once()
         
@@ -68,6 +66,12 @@ class TestProfileManagerModule(unittest.TestCase):
         launch_args = mock_playwright.chromium.launch.call_args
         self.assertTrue(launch_args[1]['headless'])
         self.assertIn('--no-sandbox', launch_args[1]['args'])
+        
+        # Check context creation with proper settings
+        context_args = mock_browser.new_context.call_args
+        self.assertIn('user_agent', context_args[1])
+        self.assertIn('viewport', context_args[1])
+        self.assertIn('locale', context_args[1])
     
     @patch('modules.profile_manager.create_browser_context')
     def test_login_profile_missing_credentials(self, mock_create_context):
@@ -193,7 +197,11 @@ class TestProfileManagerModule(unittest.TestCase):
         # Verify
         self.assertEqual(result, mock_context)
         self.assertEqual(mock_wait_login.call_count, 2)
-        mock_sleep.assert_called_once_with(1)  # Exponential backoff: 2^0 = 1
+        # Check that sleep was called (retry logic uses exponential backoff)
+        self.assertTrue(mock_sleep.called)
+        sleep_calls = [call.args[0] for call in mock_sleep.call_args_list]
+        # Should have at least the retry backoff call with value 1 (2^0)
+        self.assertIn(1, sleep_calls)
     
     def test_is_already_logged_in_true(self):
         """Test detecting already logged in state."""

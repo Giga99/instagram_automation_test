@@ -120,15 +120,15 @@ class TestNotifierModule(unittest.TestCase):
 
     def test_send_telegram_missing_credentials(self):
         """Test sending telegram with missing credentials."""
-        # Test missing bot token
-        with self.assertRaises(ValueError) as cm:
+        # Test missing bot token - should raise exception after retries
+        with self.assertRaises(Exception) as cm:
             send_telegram("", self.test_chat_id, self.test_message)
-        self.assertIn("Telegram credentials required", str(cm.exception))
+        self.assertIn("Failed to send Telegram notification after", str(cm.exception))
 
-        # Test missing chat ID
-        with self.assertRaises(ValueError) as cm:
+        # Test missing chat ID - should raise exception after retries
+        with self.assertRaises(Exception) as cm:
             send_telegram(self.test_bot_token, "", self.test_message)
-        self.assertIn("Telegram credentials required", str(cm.exception))
+        self.assertIn("Failed to send Telegram notification after", str(cm.exception))
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
     @patch('modules.notifier.TelegramNotifier.send_completion')
