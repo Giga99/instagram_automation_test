@@ -39,7 +39,7 @@ def load_profile_configs() -> List[Dict[str, str]]:
     """
     profiles = []
 
-    for i in range(1, 4):  # profiles 1-3
+    for i in range(1, 3):  # profiles 1-2
         username = os.getenv(f"INSTAGRAM_USER{i}")
         password = os.getenv(f"INSTAGRAM_PASS{i}")
 
