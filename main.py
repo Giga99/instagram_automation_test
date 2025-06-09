@@ -23,6 +23,7 @@ from modules.logger import init_logger, write_log_entry, get_current_timestamp, 
 from modules.notifier import send_completion_notification, send_error_notification, send_progress_notification
 from modules.poster import post_comment, simulate_post, USE_REAL_INSTAGRAM
 from modules.profile_manager import login_profile, close_context
+from modules.profile_config import ProfilePool
 
 # Configuration
 TARGET_POST_URL = os.getenv("INSTAGRAM_POST_URL", "")  # Set this to your target Instagram post URL
@@ -30,28 +31,64 @@ HEADLESS_MODE = os.getenv("HEADLESS_MODE", "true").lower() == "true"
 COMMENT_PROMPT = os.getenv("COMMENT_PROMPT", "gym workout motivation")
 
 
-def load_profile_configs() -> List[Dict[str, str]]:
+def load_profile_configs() -> List[Dict[str, any]]:
     """
-    Loads profile configurations from environment variables.
+    Enterprise profile loading using the new scalable ProfilePool system.
     
     Returns:
-        List of profile dictionaries with id, username, and password
+        List of profile dictionaries with enhanced configuration
     """
+    print("🏢 Loading profiles configuration...")
+    
+    # Initialize the profile pool
+    profile_pool = ProfilePool("profiles.json")
+    
+    # Display stats
+    stats = profile_pool.get_stats_summary()
+    print(f"📊 Profile Stats:")
+    print(f"   Total Profiles: {stats['total_profiles']}")
+    print(f"   Enabled: {stats['enabled_profiles']}")
+    print(f"   Healthy: {stats['healthy_profiles']} ({stats['health_rate']})")
+    
+    # Validate all credentials first
+    print("\n🔍 Validating enterprise credentials...")
+    validation_results = profile_pool.validate_all_credentials()
+    
+    valid_count = sum(1 for v in validation_results.values() if v)
+    total_count = len(validation_results)
+    
+    print(f"✅ Credential Validation: {valid_count}/{total_count} profiles have valid credentials")
+    
+    if valid_count == 0:
+        print("\n❌ No profiles with valid credentials found!")
+        print("💡 Add credentials to your .env file:")
+        print("   INSTAGRAM_USER1=username1:password1")
+        print("   INSTAGRAM_USER2=username2:password2")
+        print("   ... etc ...")
+        return []
+    
+    # Get available profiles
+    available_profiles = profile_pool.get_available_profiles(enabled_only=True)
+    
+    if not available_profiles:
+        print("❌ No available profiles found!")
+        return []
+    
+    # Convert to format for compatibility
     profiles = []
-
-    for i in range(1, 3):  # profiles 1-2
-        username = os.getenv(f"INSTAGRAM_USER{i}")
-        password = os.getenv(f"INSTAGRAM_PASS{i}")
-
-        if username and password:
-            profiles.append({
-                "id": f"profile{i}",
-                "username": username,
-                "password": password
-            })
-        else:
-            print(f"⚠️ Profile {i} credentials not found (INSTAGRAM_USER{i}/INSTAGRAM_PASS{i})")
-
+    for item in available_profiles:
+        profile_config = item['profile']
+        profiles.append({
+            "id": profile_config.id,
+            "username": item['username'],
+            "password": item['password'],
+            "priority": profile_config.priority,
+            "settings": profile_config.settings,
+            "health": profile_config.health
+        })
+    
+    print(f"🚀 Loaded {len(profiles)} profiles ready for automation")
+    
     return profiles
 
 
@@ -191,7 +228,9 @@ def main():
         print("💡 Make sure to set INSTAGRAM_USER1/INSTAGRAM_PASS1, etc. in your .env file")
         return
 
-    print(f"👥 Found {len(profiles)} profile(s): {[p['id'] for p in profiles]}")
+    print(f"👥 Found {len(profiles)} profile(s):")
+    for p in profiles:
+        print(f"   • {p['id']} (priority: {p['priority']})")
 
     # Check target post URL
     if not TARGET_POST_URL:
@@ -229,9 +268,19 @@ def main():
                 else:
                     failed_profiles.append(result["profile_id"])
 
-                # Add delay between profiles to avoid rate limiting
+                # Add intelligent delay between profiles based on settings
                 if i < len(profiles):
-                    delay = 30  # 30 seconds between profiles
+                    current_profile = profiles[i-1]  # Current profile just processed
+                    next_profile = profiles[i] if i < len(profiles) else None
+                    
+                    # Use profile-specific delay or default
+                    delay = current_profile.get('settings', {}).get('delay_between_profiles', 30)
+                    
+                    # Add extra delay for different priority profiles
+                    if next_profile and current_profile['priority'] != next_profile['priority']:
+                        delay += 10  # Extra 10 seconds for priority switching
+                        print(f"🔄 Switching from priority {current_profile['priority']} to {next_profile['priority']}")
+                    
                     print(f"⏳ Waiting {delay} seconds before next profile...")
                     time.sleep(delay)
 

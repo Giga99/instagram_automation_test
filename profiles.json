@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "description": "Profile Management Configuration",
+  "profiles": [
+    {
+      "id": "prohibidocopiar__",
+      "credential_key": "INSTAGRAM_USER1",
+      "enabled": true,
+      "priority": 1,
+      "settings": {
+        "delay_between_comments": 45,
+        "max_retries": 3,
+        "headless": true,
+        "max_comments_per_session": 5
+      }
+    },
+    {
+      "id": "dummy_notme",
+      "credential_key": "INSTAGRAM_USER2", 
+      "enabled": true,
+      "priority": 1,
+      "settings": {
+        "delay_between_comments": 45,
+        "max_retries": 3,
+        "headless": true,
+        "max_comments_per_session": 5
+      }
+    }
+  ],
+  "global_settings": {
+    "default_delay_between_profiles": 30,
+    "max_concurrent_profiles": 3,
+    "health_check_interval": 3600,
+    "auto_disable_unhealthy": true
+  }
+} 
