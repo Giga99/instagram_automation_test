@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Any
 
 import requests
 
-from .date_utils import parse_timestamp
+from src.utils.date_utils import parse_timestamp
 
 logger = logging.getLogger(__name__)
 

@@ -4,17 +4,13 @@ AdsPower Profile Loader
 Simple loader for existing AdsPower profiles configured for Instagram automation.
 """
 
-import os
 from typing import Dict, List, Any
 
-from modules.adspower_client import AdsPowerClient
-
-# AdsPower Configuration
-ADSPOWER_BASE_URL = os.getenv("ADSPOWER_BASE_URL", "http://127.0.0.1:50325")
-ADSPOWER_API_KEY = os.getenv("ADSPOWER_API_KEY", "")
+from .client import AdsPowerClient
+from src.utils.config import config
 
 # Initialize AdsPower client
-client = AdsPowerClient(ADSPOWER_BASE_URL, ADSPOWER_API_KEY)
+client = AdsPowerClient(config.adspower_base_url, config.adspower_api_key)
 
 
 def load_adspower_profiles() -> List[Dict[str, Any]]:

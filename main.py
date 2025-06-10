@@ -15,15 +15,16 @@ import time
 from datetime import datetime
 from typing import List, Dict, Any
 
-from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright, Playwright
 
-from modules.adspower_config import load_adspower_profiles
-from modules.adspower_profile_manager import AdsPowerProfileManager
-from modules.comment_gen import generate_comment, validate_comment
-from modules.logger import init_logger, write_log_entry, get_current_timestamp, get_log_summary
-from modules.notifier import send_completion_notification, send_error_notification, send_progress_notification
-from modules.poster import post_comment, simulate_post, POST_COMMENT
+from src.integrations.adspower.config import load_adspower_profiles
+from src.integrations.adspower.profile_manager import AdsPowerProfileManager
+from src.integrations.instagram.poster import post_comment, simulate_post, POST_COMMENT
+from src.integrations.openai.comment_gen import generate_comment, validate_comment
+from src.integrations.telegram.notifier import send_completion_notification, send_error_notification, \
+    send_progress_notification
+from src.utils.config import config
+from src.utils.logger import init_logger, write_log_entry, get_current_timestamp, get_log_summary
 
 
 def load_profile_configs() -> List[Dict[str, any]]:
@@ -166,18 +167,10 @@ def process_single_profile(playwright: Playwright, profile: Dict[str, str],
 def main():
     """Main orchestrator function that runs the entire AdsPower automation process."""
 
-    # Load environment variables
-    load_dotenv()
-
-    # Configuration
-    instagram_post_url = os.getenv("INSTAGRAM_POST_URL", "")  # Set this to your target Instagram post URL
-    headless_mode = os.getenv("HEADLESS_MODE", "true").lower() == "true"
-    comment_prompt = os.getenv("COMMENT_PROMPT", "gym workout motivation")
-
     print("🚀 Instagram Automation Starting")
     print(f"📅 Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"🎭 Simulation Mode: {'ON' if not POST_COMMENT else 'OFF'}")
-    print(f"👤 Headless Mode: {'ON' if headless_mode else 'OFF'}")
+    print(f"🎭 Simulation Mode: {'ON' if not config.post_comment else 'OFF'}")
+    print(f"👤 Headless Mode: {'ON' if config.headless_mode else 'OFF'}")
     print(f"🏢 Profile Manager: AdsPower Professional")
 
     # Ensure output directory exists
@@ -202,16 +195,16 @@ def main():
         print(f"   • {p['id']}{profile_type}")
 
     # Check target post URL
-    if not instagram_post_url:
+    if not config.instagram_post_url:
         print("⚠️ No target post URL set!")
         print("💡 Set INSTAGRAM_POST_URL in your .env file")
-        if POST_COMMENT:
+        if config.post_comment:
             print("❌ Cannot proceed without target post URL in real mode")
             return
         else:
             print("🎭 Continuing with simulation mode...")
     else:
-        print(f"🎯 Target post: {instagram_post_url}")
+        print(f"🎯 Target post: {config.instagram_post_url}")
 
     # Process all AdsPower profiles
     results = []
@@ -226,9 +219,9 @@ def main():
                 result = process_single_profile(
                     playwright=playwright,
                     profile=profile,
-                    target_post_url=instagram_post_url,
-                    headless_mode=headless_mode,
-                    comment_prompt=comment_prompt
+                    target_post_url=config.instagram_post_url,
+                    headless_mode=config.headless_mode,
+                    comment_prompt=config.comment_prompt
                 )
 
                 results.append(result)

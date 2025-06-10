@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any, List
 
 from playwright.sync_api import BrowserContext, Playwright, Page, TimeoutError as PlaywrightTimeoutError
 
-from .adspower_client import AdsPowerClient, AdsPowerProfile
+from .client import AdsPowerClient, AdsPowerProfile
 
 
 class AdsPowerProfileManager:
