@@ -9,7 +9,7 @@ import time
 from playwright.sync_api import BrowserContext, Page, TimeoutError as PlaywrightTimeoutError
 
 # Configuration flag for simulation mode
-USE_REAL_INSTAGRAM = os.getenv("USE_REAL_INSTAGRAM", False)  # Set to True in .env when using real Instagram accounts
+POST_COMMENT = os.getenv("POST_COMMENT", False)  # Set to True in .env when using real Instagram accounts
 
 
 def post_comment(context: BrowserContext, comment_text: str, post_url: str = None, max_retries: int = 3) -> bool:
@@ -25,7 +25,7 @@ def post_comment(context: BrowserContext, comment_text: str, post_url: str = Non
     Returns:
         True if successful, False if failed
     """
-    if not USE_REAL_INSTAGRAM:
+    if not POST_COMMENT:
         print(f"🎭 SIMULATION MODE: Would post comment: {comment_text}")
         return True
 

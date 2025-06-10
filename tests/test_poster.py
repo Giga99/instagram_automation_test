@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from modules.poster import (
     post_comment, simulate_post, find_and_focus_comment_input,
     submit_comment, verify_comment_posted, check_comment_restrictions,
-    get_post_info, wait_for_rate_limit_reset, USE_REAL_INSTAGRAM
+    get_post_info, wait_for_rate_limit_reset, POST_COMMENT
 )
 
 
@@ -40,7 +40,7 @@ class TestPosterModule(unittest.TestCase):
         self.mock_page = Mock()
         self.mock_context.new_page.return_value = self.mock_page
     
-    @patch('modules.poster.USE_REAL_INSTAGRAM', False)
+    @patch('modules.poster.POST_COMMENT', False)
     def test_post_comment_simulation_mode(self):
         """Test comment posting in simulation mode."""
         result = post_comment(self.mock_context, self.test_comment, self.test_post_url)
@@ -49,7 +49,7 @@ class TestPosterModule(unittest.TestCase):
         # Should not create any pages in simulation mode
         self.mock_context.new_page.assert_not_called()
     
-    @patch('modules.poster.USE_REAL_INSTAGRAM', True)
+    @patch('modules.poster.POST_COMMENT', True)
     @patch('modules.poster.submit_comment')
     @patch('modules.poster.find_and_focus_comment_input')
     @patch('modules.poster.time.sleep')
@@ -72,7 +72,7 @@ class TestPosterModule(unittest.TestCase):
         mock_submit.assert_called_once_with(self.mock_page)
         self.mock_page.close.assert_called_once()
     
-    @patch('modules.poster.USE_REAL_INSTAGRAM', True)
+    @patch('modules.poster.POST_COMMENT', True)
     def test_post_comment_empty_text(self):
         """Test posting with empty comment text."""
         result = post_comment(self.mock_context, "", self.test_post_url)
@@ -80,7 +80,7 @@ class TestPosterModule(unittest.TestCase):
         self.assertFalse(result)
         self.mock_context.new_page.assert_not_called()
     
-    @patch('modules.poster.USE_REAL_INSTAGRAM', True)
+    @patch('modules.poster.POST_COMMENT', True)
     @patch('modules.poster.find_and_focus_comment_input')
     def test_post_comment_input_not_found(self, mock_find_input):
         """Test posting when comment input cannot be found."""
@@ -91,7 +91,7 @@ class TestPosterModule(unittest.TestCase):
         self.assertFalse(result)
         self.assertEqual(self.mock_page.close.call_count, 3)
     
-    @patch('modules.poster.USE_REAL_INSTAGRAM', True)
+    @patch('modules.poster.POST_COMMENT', True)
     @patch('modules.poster.time.sleep')
     @patch('modules.poster.submit_comment')
     @patch('modules.poster.find_and_focus_comment_input')
@@ -109,7 +109,7 @@ class TestPosterModule(unittest.TestCase):
         self.assertEqual(self.mock_context.new_page.call_count, 2)
         mock_sleep.assert_called_once_with(1)  # Exponential backoff: 2^0 = 1
     
-    @patch('modules.poster.USE_REAL_INSTAGRAM', True)
+    @patch('modules.poster.POST_COMMENT', True)
     @patch('modules.poster.find_and_focus_comment_input')
     def test_post_comment_all_retries_fail(self, mock_find_input):
         """Test when all retry attempts fail."""
