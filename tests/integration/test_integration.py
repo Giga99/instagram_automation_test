@@ -15,9 +15,9 @@ from unittest.mock import patch, Mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.logger import init_logger, write_log_entry, get_current_timestamp, get_log_summary
-from modules.comment_gen import generate_comment, validate_comment
-from modules.notifier import send_completion_notification
+from src.utils.logger import init_logger, write_log_entry, get_current_timestamp, get_log_summary
+from src.integrations.openai.comment_gen import generate_comment, validate_comment
+from src.integrations.telegram.notifier import send_completion_notification
 
 
 class TestIntegration(unittest.TestCase):
@@ -31,18 +31,18 @@ class TestIntegration(unittest.TestCase):
         self.test_chat_id = "test-chat-id"
 
         # Reset global logger state
-        import modules.logger
-        modules.logger._current_log_path = None
+        import src.utils.logger
+        src.utils.logger._current_log_path = None
 
     def tearDown(self):
         """Clean up after each test method."""
         shutil.rmtree(self.test_dir, ignore_errors=True)
-        import modules.logger
-        modules.logger._current_log_path = None
+        import src.utils.logger
+        src.utils.logger._current_log_path = None
 
     @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-api-key'})
-    @patch('modules.comment_gen.OpenAI')
-    @patch('modules.logger.LOG_FORMAT', 'json')
+    @patch('src.integrations.openai.comment_gen.OpenAI')
+    @patch('src.utils.logger.LOG_FORMAT', 'json')
     def test_comment_generation_with_logging(self, mock_openai_class):
         """Test comment generation integrated with logging."""
         # Setup OpenAI mock
@@ -68,9 +68,9 @@ class TestIntegration(unittest.TestCase):
         self.assertEqual(summary['successful'], 1)
         self.assertIn("profile1", summary['profiles_processed'])
 
-    @patch('modules.logger.LOG_FORMAT', 'json')
+    @patch('src.utils.logger.LOG_FORMAT', 'json')
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier._send_message')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier._send_message')
     def test_logging_with_notification_workflow(self, mock_send_message):
         """Test complete logging to notification workflow."""
         # Initialize logger and simulate operations
@@ -96,9 +96,9 @@ class TestIntegration(unittest.TestCase):
         self.assertIn("Success Rate: 66.7%", message)
 
     @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-api-key', 'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.comment_gen.OpenAI')
-    @patch('modules.logger.LOG_FORMAT', 'json')
-    @patch('modules.notifier.TelegramNotifier._send_message')
+    @patch('src.integrations.openai.comment_gen.OpenAI')
+    @patch('src.utils.logger.LOG_FORMAT', 'json')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier._send_message')
     def test_full_workflow_simulation(self, mock_send_message, mock_openai_class):
         """Test complete workflow simulation with all modules."""
         # Setup OpenAI mock for multiple comments

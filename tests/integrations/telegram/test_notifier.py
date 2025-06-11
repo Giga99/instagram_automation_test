@@ -2,7 +2,7 @@
 """
 Unit Tests for Notifier Module
 
-Tests all functionality of the modules/notifier.py module including:
+Tests all functionality of the src/integrations/telegram/notifier.py module including:
 - Telegram API integration (mocked)
 - Message formatting
 - Retry logic and error handling
@@ -19,7 +19,7 @@ import requests
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.notifier import (
+from src.integrations.telegram.notifier import (
     TelegramNotifier, send_telegram, send_completion_notification, send_error_notification,
     send_progress_notification, validate_telegram_credentials, test_telegram_notification
 )
@@ -125,7 +125,7 @@ class TestNotifierModule(unittest.TestCase):
         # 2. After retries: "Failed to send Telegram notification after"
         with self.assertRaises(Exception) as cm:
             send_telegram("", self.test_chat_id, self.test_message)
-        
+
         exception_msg = str(cm.exception)
         self.assertTrue(
             "Failed to send Telegram notification after" in exception_msg or
@@ -138,7 +138,7 @@ class TestNotifierModule(unittest.TestCase):
         # 2. After retries: "Failed to send Telegram notification after"
         with self.assertRaises(Exception) as cm:
             send_telegram(self.test_bot_token, "", self.test_message)
-        
+
         exception_msg = str(cm.exception)
         self.assertTrue(
             "Failed to send Telegram notification after" in exception_msg or
@@ -147,7 +147,7 @@ class TestNotifierModule(unittest.TestCase):
         )
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier.send_completion')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier.send_completion')
     def test_send_completion_notification(self, mock_send):
         """Test sending completion notification with summary."""
         # Test data
@@ -167,7 +167,7 @@ class TestNotifierModule(unittest.TestCase):
         mock_send.assert_called_once_with(summary)
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier._send_message')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier._send_message')
     def test_send_completion_notification_fallback(self, mock_send):
         """Test completion notification fallback on failure."""
         # Setup mock to fail first, succeed on fallback
@@ -191,7 +191,7 @@ class TestNotifierModule(unittest.TestCase):
         self.assertIn("Instagram automation completed", fallback_message)
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier._send_message')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier._send_message')
     def test_send_completion_notification_double_failure(self, mock_send):
         """Test completion notification when both primary and fallback fail."""
         # Setup mock to always fail
@@ -205,7 +205,7 @@ class TestNotifierModule(unittest.TestCase):
             send_completion_notification(summary)
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier.send_error')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier.send_error')
     def test_send_error_notification(self, mock_send):
         """Test sending error notification."""
         error_message = "Login failed for user"
@@ -218,7 +218,7 @@ class TestNotifierModule(unittest.TestCase):
         mock_send.assert_called_once_with(error_message, profile_id)
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier.send_error')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier.send_error')
     def test_send_error_notification_no_profile(self, mock_send):
         """Test sending error notification without profile ID."""
         error_message = "General error occurred"
@@ -230,7 +230,7 @@ class TestNotifierModule(unittest.TestCase):
         mock_send.assert_called_once_with(error_message, None)
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier.send_progress')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier.send_progress')
     def test_send_progress_notification(self, mock_send):
         """Test sending progress notification."""
         profile_id = "profile1"
@@ -244,7 +244,7 @@ class TestNotifierModule(unittest.TestCase):
         mock_send.assert_called_once_with(profile_id, status, comment)
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier.send_progress')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier.send_progress')
     def test_send_progress_notification_no_comment(self, mock_send):
         """Test sending progress notification without comment."""
         profile_id = "profile2"
@@ -257,7 +257,7 @@ class TestNotifierModule(unittest.TestCase):
         mock_send.assert_called_once_with(profile_id, status, None)
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier._send_message')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier._send_message')
     def test_send_progress_notification_long_comment(self, mock_send):
         """Test progress notification with long comment truncation."""
         profile_id = "profile1"
@@ -276,7 +276,7 @@ class TestNotifierModule(unittest.TestCase):
         self.assertIn("...", message)  # Truncation indicator
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier.validate_credentials')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier.validate_credentials')
     def test_validate_telegram_credentials_success(self, mock_validate):
         """Test successful credential validation."""
         mock_validate.return_value = True
@@ -289,7 +289,7 @@ class TestNotifierModule(unittest.TestCase):
         mock_validate.assert_called_once()
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier.validate_credentials')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier.validate_credentials')
     def test_validate_telegram_credentials_failure(self, mock_validate):
         """Test credential validation failure."""
         mock_validate.return_value = False
@@ -366,8 +366,8 @@ class TestNotifierModule(unittest.TestCase):
         self.assertIsNone(result)
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier._send_message')
-    @patch('modules.notifier.TelegramNotifier.send_completion')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier._send_message')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier.send_completion')
     def test_test_telegram_notification_success(self, mock_completion, mock_send):
         """Test the test_telegram_notification function success case."""
         # Setup mocks
@@ -392,7 +392,7 @@ class TestNotifierModule(unittest.TestCase):
         self.assertFalse(result)
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier._send_message')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier._send_message')
     def test_test_telegram_notification_failure(self, mock_send):
         """Test the test_telegram_notification function with failure."""
         # Setup mock to fail
@@ -405,7 +405,7 @@ class TestNotifierModule(unittest.TestCase):
         self.assertFalse(result)
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier._send_message')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier._send_message')
     def test_completion_notification_empty_profiles(self, mock_send):
         """Test completion notification with empty profiles list."""
         summary = {
@@ -426,7 +426,7 @@ class TestNotifierModule(unittest.TestCase):
         self.assertIn("No profiles processed", message)
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier._send_message')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier._send_message')
     def test_html_formatting_in_messages(self, mock_send):
         """Test that messages use proper HTML formatting."""
         # Test error notification
@@ -441,7 +441,7 @@ class TestNotifierModule(unittest.TestCase):
         self.assertIn("</b>", message)
 
     @patch.dict(os.environ, {'TG_BOT_TOKEN': 'test-token', 'TG_CHAT_ID': 'test-chat'})
-    @patch('modules.notifier.TelegramNotifier._send_message')
+    @patch('src.integrations.telegram.notifier.TelegramNotifier._send_message')
     def test_notification_error_handling(self, mock_send):
         """Test error handling in notification functions."""
         # Test that exceptions in send_telegram are caught and logged

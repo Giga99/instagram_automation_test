@@ -2,7 +2,7 @@
 """
 Unit Tests for Comment Generation Module
 
-Tests all functionality of the modules/comment_gen.py module including:
+Tests all functionality of the src/integrations/openai/comment_gen.py module including:
 - OpenAI API integration (mocked)
 - Comment validation
 - Comment variations
@@ -17,7 +17,7 @@ from unittest.mock import patch, Mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.comment_gen import (
+from src.integrations.openai.comment_gen import (
     generate_comment, generate_multiple_comments, validate_comment,
     get_comment_variations, test_comment_generation
 )
@@ -102,7 +102,7 @@ class TestCommentGenModule(unittest.TestCase):
         self.assertIn(f"motivational {custom_prompt}", variations)
         self.assertIn(f"inspiring {custom_prompt}", variations)
 
-    @patch('modules.comment_gen.OpenAI')
+    @patch('src.integrations.openai.comment_gen.OpenAI')
     def test_generate_comment_success(self, mock_openai_class):
         """Test successful comment generation."""
         # Setup mock
@@ -128,7 +128,7 @@ class TestCommentGenModule(unittest.TestCase):
         self.assertEqual(call_args[1]['messages'][0]['role'], 'system')
         self.assertEqual(call_args[1]['messages'][1]['role'], 'user')
 
-    @patch('modules.comment_gen.OpenAI')
+    @patch('src.integrations.openai.comment_gen.OpenAI')
     def test_generate_comment_with_quotes_cleanup(self, mock_openai_class):
         """Test comment generation with quote cleanup."""
         # Setup mock
@@ -146,7 +146,7 @@ class TestCommentGenModule(unittest.TestCase):
         # Verify quotes are stripped
         self.assertEqual(result, "Great workout session! 💪")
 
-    @patch('modules.comment_gen.OpenAI')
+    @patch('src.integrations.openai.comment_gen.OpenAI')
     def test_generate_comment_retry_logic(self, mock_openai_class):
         """Test comment generation retry logic on failure."""
         # Setup mock
@@ -168,7 +168,7 @@ class TestCommentGenModule(unittest.TestCase):
         self.assertEqual(result, "Success! 💪")
         self.assertEqual(mock_client.chat.completions.create.call_count, 3)
 
-    @patch('modules.comment_gen.OpenAI')
+    @patch('src.integrations.openai.comment_gen.OpenAI')
     def test_generate_comment_max_retries_exceeded(self, mock_openai_class):
         """Test comment generation when max retries are exceeded."""
         # Setup mock
@@ -184,7 +184,7 @@ class TestCommentGenModule(unittest.TestCase):
         # Verify error message includes retry information
         self.assertIn("Failed to generate comment after 2 attempts", str(cm.exception))
 
-    @patch('modules.comment_gen.OpenAI')
+    @patch('src.integrations.openai.comment_gen.OpenAI')
     def test_generate_comment_empty_response(self, mock_openai_class):
         """Test comment generation with empty API response."""
         # Setup mock
@@ -210,7 +210,7 @@ class TestCommentGenModule(unittest.TestCase):
 
             self.assertIn("OPENAI_API_KEY environment variable is not set", str(cm.exception))
 
-    @patch('modules.comment_gen.generate_comment')
+    @patch('src.integrations.openai.comment_gen.generate_comment')
     def test_generate_multiple_comments_success(self, mock_generate):
         """Test generating multiple unique comments."""
         # Setup mock to return different comments
@@ -230,7 +230,7 @@ class TestCommentGenModule(unittest.TestCase):
         self.assertEqual(result[2], "Comment 3 ⚡")
         self.assertEqual(mock_generate.call_count, 3)
 
-    @patch('modules.comment_gen.generate_comment')
+    @patch('src.integrations.openai.comment_gen.generate_comment')
     def test_generate_multiple_comments_with_duplicates(self, mock_generate):
         """Test generating multiple comments with duplicate handling."""
         # Setup mock to return duplicate then unique comments
@@ -249,7 +249,7 @@ class TestCommentGenModule(unittest.TestCase):
         self.assertEqual(result[1], "Comment 2 🔥")
         self.assertEqual(mock_generate.call_count, 3)  # Called 3 times due to duplicate
 
-    @patch('modules.comment_gen.generate_comment')
+    @patch('src.integrations.openai.comment_gen.generate_comment')
     def test_generate_multiple_comments_allow_duplicates(self, mock_generate):
         """Test generating multiple comments allowing duplicates."""
         # Setup mock to return same comment
@@ -264,7 +264,7 @@ class TestCommentGenModule(unittest.TestCase):
         self.assertEqual(result[1], "Same comment 💪")
         self.assertEqual(mock_generate.call_count, 2)
 
-    @patch('modules.comment_gen.generate_comment')
+    @patch('src.integrations.openai.comment_gen.generate_comment')
     def test_generate_multiple_comments_with_failures(self, mock_generate):
         """Test generating multiple comments with some failures."""
         # Setup mock with failures
@@ -283,7 +283,7 @@ class TestCommentGenModule(unittest.TestCase):
         self.assertEqual(result[0], "Comment 1 💪")
         self.assertEqual(result[1], "Comment 2 🔥")
 
-    @patch('modules.comment_gen.generate_comment')
+    @patch('src.integrations.openai.comment_gen.generate_comment')
     def test_generate_multiple_comments_max_attempts(self, mock_generate):
         """Test generating multiple comments hitting max attempts."""
         # Setup mock to always fail
@@ -295,8 +295,8 @@ class TestCommentGenModule(unittest.TestCase):
         # Verify we get empty result after max attempts
         self.assertEqual(len(result), 0)
 
-    @patch('modules.comment_gen.generate_comment')
-    @patch('modules.comment_gen.validate_comment')
+    @patch('src.integrations.openai.comment_gen.generate_comment')
+    @patch('src.integrations.openai.comment_gen.validate_comment')
     def test_test_comment_generation_function(self, mock_validate, mock_generate):
         """Test the test_comment_generation function."""
         # Setup mocks
@@ -308,7 +308,7 @@ class TestCommentGenModule(unittest.TestCase):
         mock_validate.return_value = True
 
         # Test
-        with patch('modules.comment_gen.generate_multiple_comments') as mock_multi:
+        with patch('src.integrations.openai.comment_gen.generate_multiple_comments') as mock_multi:
             mock_multi.return_value = ["Comment 1", "Comment 2"]
             result = test_comment_generation()
 
@@ -317,7 +317,7 @@ class TestCommentGenModule(unittest.TestCase):
         mock_generate.assert_called()
         mock_validate.assert_called()
 
-    @patch('modules.comment_gen.generate_comment')
+    @patch('src.integrations.openai.comment_gen.generate_comment')
     def test_test_comment_generation_function_failure(self, mock_generate):
         """Test the test_comment_generation function with failure."""
         # Setup mock to fail

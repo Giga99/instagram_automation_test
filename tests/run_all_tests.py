@@ -4,9 +4,8 @@ Instagram Automation Test Runner
 
 Runs all test modules and provides comprehensive reporting.
 Tests include:
-- Logger and Comment Generation modules
-- Notifier module  
-- Profile Manager, Poster, and Main Orchestrator modules
+- Utils: Logger and configuration modules
+- Integrations: OpenAI, Telegram, Instagram, and AdsPower modules
 - Integration tests across all phases
 
 Run this script to execute the complete test suite.
@@ -22,12 +21,12 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
 
-def run_test_module(module_name, display_name):
+def run_test_module(module_path, display_name):
     """
     Run a specific test module and return results.
     
     Args:
-        module_name: Name of the test module to import
+        module_path: Full path to the test module (e.g., 'tests.utils.test_logger')
         display_name: Human-readable name for display
         
     Returns:
@@ -35,7 +34,7 @@ def run_test_module(module_name, display_name):
     """
     try:
         # Import the test module
-        test_module = importlib.import_module(f'tests.{module_name}')
+        test_module = importlib.import_module(module_path)
 
         # Create test suite
         loader = unittest.TestLoader()
@@ -66,20 +65,19 @@ def main():
     print("🚀 INSTAGRAM AUTOMATION PROJECT - COMPREHENSIVE TEST SUITE")
     print("🔥" * 70)
     print("🔥" * 6)
-    print("🧪 Running all tests of modules...")
-    print("   This will test all Phase 1-3 modules plus Integration tests")
+    print("🧪 Running all tests with improved organization...")
+    print("   This will test all modules organized by category")
     print()
     print("🔥" * 70)
     print("🔥" * 6)
 
-    # Test modules configuration
+    # Test modules configuration with new organized structure
     test_modules = [
-        ('test_logger', 'Logger Module', '📝 LOGGER MODULE TESTS'),
-        ('test_comment_gen', 'Comment Generation Module', '🤖 COMMENT GENERATION MODULE TESTS'),
-        ('test_notifier', 'Notifier Module', '📱 NOTIFIER MODULE TESTS'),
-        ('test_profile_manager', 'Profile Manager Module', '🔐 PROFILE MANAGER MODULE TESTS'),
-        ('test_poster', 'Poster Module', '💬 POSTER MODULE TESTS'),
-        ('test_integration', 'Integration Tests', '🔗 INTEGRATION TESTS'),
+        ('tests.utils.test_logger', 'Logger Module', '📝 UTILS - LOGGER MODULE TESTS'),
+        ('tests.integrations.openai_integration.test_comment_gen', 'Comment Generation Module', '🤖 OPENAI - COMMENT GENERATION MODULE TESTS'),
+        ('tests.integrations.telegram.test_notifier', 'Notifier Module', '📱 TELEGRAM - NOTIFIER MODULE TESTS'),
+        ('tests.integrations.instagram.test_poster', 'Poster Module', '💬 INSTAGRAM - POSTER MODULE TESTS'),
+        ('tests.integration.test_integration', 'Integration Tests', '🔗 INTEGRATION TESTS'),
     ]
 
     results = {}
@@ -88,7 +86,7 @@ def main():
     all_passed = True
 
     # Run each test module
-    for module_name, display_name, header in test_modules:
+    for module_path, display_name, header in test_modules:
         print(header)
         print("🔥" * 70)
         print("🔥" * 6)
@@ -96,7 +94,7 @@ def main():
 
         # Run the actual test module with full output
         try:
-            test_module = importlib.import_module(f'tests.{module_name}')
+            test_module = importlib.import_module(module_path)
             loader = unittest.TestLoader()
             suite = loader.loadTestsFromModule(test_module)
             runner = unittest.TextTestRunner(verbosity=2)
@@ -166,44 +164,42 @@ def main():
             passed_modules += 1
 
     print()
-    print("🏆 Phase Breakdown:")
+    print("🏆 Category Breakdown:")
 
-    # Phase 1 results
-    phase1_modules = ['Logger Module', 'Comment Generation Module']
-    phase1_passed = all(results.get(mod, {}).get('passed', False) for mod in phase1_modules)
-    phase1_status = "✅ PASSED" if phase1_passed else "❌ FAILED"
-    print(f"   • Phase 1 (Foundation): {phase1_status}")
+    # Utils results
+    utils_modules = ['Logger Module']
+    utils_passed = all(results.get(mod, {}).get('passed', False) for mod in utils_modules)
+    utils_status = "✅ PASSED" if utils_passed else "❌ FAILED"
+    print(f"   • Utils (Foundation): {utils_status}")
 
-    # Phase 2 results  
-    phase2_modules = ['Notifier Module']
-    phase2_passed = all(results.get(mod, {}).get('passed', False) for mod in phase2_modules)
-    phase2_status = "✅ PASSED" if phase2_passed else "❌ FAILED"
-    print(f"   • Phase 2 (Notifications): {phase2_status}")
-
-    # Phase 3 results
-    phase3_modules = ['Profile Manager Module', 'Poster Module']
-    phase3_passed = all(results.get(mod, {}).get('passed', False) for mod in phase3_modules)
-    phase3_status = "✅ PASSED" if phase3_passed else "❌ FAILED"
-    print(f"   • Phase 3 (Browser Automation): {phase3_status}")
-
-    # Integration results
-    integration_passed = results.get('Integration Tests', {}).get('passed', False)
+    # Integration modules results  
+    integration_modules = ['Comment Generation Module', 'Notifier Module', 'Poster Module']
+    integration_passed = all(results.get(mod, {}).get('passed', False) for mod in integration_modules)
     integration_status = "✅ PASSED" if integration_passed else "❌ FAILED"
-    print(f"   • Integration Tests: {integration_status}")
+    print(f"   • External Integrations: {integration_status}")
 
+    # Integration tests results
+    integration_test_passed = results.get('Integration Tests', {}).get('passed', False)
+    integration_test_status = "✅ PASSED" if integration_test_passed else "❌ FAILED"
+    print(f"   • End-to-End Integration: {integration_test_status}")
+
+    print()
+    print("ℹ️  Note: AdsPower tests are available separately via:")
+    print("   'python tests/integrations/adspower/run_adspower_tests.py'")
     print()
 
     if all_passed:
         print("🎉 ALL TESTS PASSED!")
         print("🚀 Instagram Automation Project is ready for production!")
+        print("📁 Tests are now organized by category for better maintainability!")
     else:
         print("⚠️ SOME TESTS FAILED!")
         print("🔧 Please review the failed tests and fix any issues.")
-
+    
     print("=" * 80)
     print()
 
-    # Return appropriate exit code
+    # Exit with appropriate code
     sys.exit(0 if all_passed else 1)
 
 

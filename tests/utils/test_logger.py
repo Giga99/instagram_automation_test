@@ -2,7 +2,7 @@
 """
 Unit Tests for Logger Module
 
-Tests all functionality of the modules/logger.py module including:
+Tests all functionality of the src/utils/logger.py module including:
 - JSON and CSV logging
 - Atomic file operations
 - Log reading and summarization
@@ -22,7 +22,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.logger import (
+from src.utils.logger import (
     init_logger, write_log_entry, get_current_timestamp,
     read_log_entries, get_log_summary, get_current_log_path
 )
@@ -39,8 +39,8 @@ class TestLoggerModule(unittest.TestCase):
         self.csv_log_path = os.path.join(self.test_dir, "test_log.csv")
 
         # Reset global state
-        import modules.logger
-        modules.logger._current_log_path = None
+        import src.utils.logger
+        src.utils.logger._current_log_path = None
 
     def tearDown(self):
         """Clean up after each test method."""
@@ -48,13 +48,13 @@ class TestLoggerModule(unittest.TestCase):
         shutil.rmtree(self.test_dir, ignore_errors=True)
 
         # Reset global state
-        import modules.logger
-        modules.logger._current_log_path = None
+        import src.utils.logger
+        src.utils.logger._current_log_path = None
 
     def test_init_logger_json_new_file(self):
         """Test initializing a new JSON log file."""
         # Test with JSON format
-        with patch('modules.logger.LOG_FORMAT', 'json'):
+        with patch('src.utils.logger.LOG_FORMAT', 'json'):
             init_logger(self.json_log_path)
 
             # Check file was created
@@ -71,7 +71,7 @@ class TestLoggerModule(unittest.TestCase):
     def test_init_logger_csv_new_file(self):
         """Test initializing a new CSV log file."""
         # Test with CSV format
-        with patch('modules.logger.LOG_FORMAT', 'csv'):
+        with patch('src.utils.logger.LOG_FORMAT', 'csv'):
             init_logger(self.csv_log_path)
 
             # Check file was created
@@ -89,7 +89,7 @@ class TestLoggerModule(unittest.TestCase):
         with open(self.json_log_path, 'w') as f:
             json.dump([{"test": "data"}], f)
 
-        with patch('modules.logger.LOG_FORMAT', 'json'):
+        with patch('src.utils.logger.LOG_FORMAT', 'json'):
             init_logger(self.json_log_path)
 
             # Check file content wasn't overwritten
@@ -99,7 +99,7 @@ class TestLoggerModule(unittest.TestCase):
 
     def test_write_log_entry_json_success(self):
         """Test writing a successful log entry in JSON format."""
-        with patch('modules.logger.LOG_FORMAT', 'json'):
+        with patch('src.utils.logger.LOG_FORMAT', 'json'):
             init_logger(self.json_log_path)
 
             timestamp = get_current_timestamp()
@@ -116,7 +116,7 @@ class TestLoggerModule(unittest.TestCase):
 
     def test_write_log_entry_json_error(self):
         """Test writing an error log entry in JSON format."""
-        with patch('modules.logger.LOG_FORMAT', 'json'):
+        with patch('src.utils.logger.LOG_FORMAT', 'json'):
             init_logger(self.json_log_path)
 
             timestamp = get_current_timestamp()
@@ -132,7 +132,7 @@ class TestLoggerModule(unittest.TestCase):
 
     def test_write_log_entry_csv_success(self):
         """Test writing a successful log entry in CSV format."""
-        with patch('modules.logger.LOG_FORMAT', 'csv'):
+        with patch('src.utils.logger.LOG_FORMAT', 'csv'):
             init_logger(self.csv_log_path)
 
             timestamp = get_current_timestamp()
@@ -147,7 +147,7 @@ class TestLoggerModule(unittest.TestCase):
 
     def test_write_multiple_entries(self):
         """Test writing multiple log entries."""
-        with patch('modules.logger.LOG_FORMAT', 'json'):
+        with patch('src.utils.logger.LOG_FORMAT', 'json'):
             init_logger(self.json_log_path)
 
             # Write multiple entries
@@ -213,7 +213,7 @@ class TestLoggerModule(unittest.TestCase):
 
     def test_get_log_summary_with_data(self):
         """Test getting summary with actual log data."""
-        with patch('modules.logger.LOG_FORMAT', 'json'):
+        with patch('src.utils.logger.LOG_FORMAT', 'json'):
             init_logger(self.json_log_path)
 
             timestamp1 = "2025-01-01T00:00:00Z"
@@ -245,13 +245,13 @@ class TestLoggerModule(unittest.TestCase):
 
     def test_unsupported_log_format(self):
         """Test handling of unsupported log format."""
-        with patch('modules.logger.LOG_FORMAT', 'xml'):
+        with patch('src.utils.logger.LOG_FORMAT', 'xml'):
             with self.assertRaises(ValueError):
                 init_logger(self.json_log_path)
 
     def test_atomic_write_json_failure_cleanup(self):
         """Test that temporary files are cleaned up on write failure."""
-        with patch('modules.logger.LOG_FORMAT', 'json'):
+        with patch('src.utils.logger.LOG_FORMAT', 'json'):
             init_logger(self.json_log_path)
 
             # Mock json.dump to raise an exception
@@ -267,7 +267,7 @@ class TestLoggerModule(unittest.TestCase):
         """Test that logger creates necessary directories."""
         nested_path = os.path.join(self.test_dir, "nested", "deep", "log.json")
 
-        with patch('modules.logger.LOG_FORMAT', 'json'):
+        with patch('src.utils.logger.LOG_FORMAT', 'json'):
             init_logger(nested_path)
 
             self.assertTrue(os.path.exists(nested_path))
@@ -275,7 +275,7 @@ class TestLoggerModule(unittest.TestCase):
 
     def test_unicode_support(self):
         """Test that logger handles Unicode characters correctly."""
-        with patch('modules.logger.LOG_FORMAT', 'json'):
+        with patch('src.utils.logger.LOG_FORMAT', 'json'):
             init_logger(self.json_log_path)
 
             unicode_comment = "Great workout! 💪🔥 Ça va bien! 中文测试"
@@ -288,7 +288,7 @@ class TestLoggerModule(unittest.TestCase):
 
     def test_long_comment_truncation_in_log_message(self):
         """Test that long comments are truncated in console output."""
-        with patch('modules.logger.LOG_FORMAT', 'json'):
+        with patch('src.utils.logger.LOG_FORMAT', 'json'):
             init_logger(self.json_log_path)
 
             long_comment = "A" * 100  # 100 characters
@@ -305,10 +305,10 @@ class TestLoggerModule(unittest.TestCase):
     def test_fallback_log_path(self):
         """Test fallback to default log path when no path is set."""
         # Reset global path
-        import modules.logger
-        modules.logger._current_log_path = None
+        import src.utils.logger
+        src.utils.logger._current_log_path = None
 
-        with patch('modules.logger.LOG_FORMAT', 'json'):
+        with patch('src.utils.logger.LOG_FORMAT', 'json'):
             # Should use default path since no path is set
             timestamp = get_current_timestamp()
 
