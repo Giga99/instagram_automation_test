@@ -10,7 +10,8 @@ This directory contains a comprehensive, well-organized test suite for the Insta
 tests/
 ├── 📁 utils/                           # Utility module tests
 │   ├── __init__.py
-│   └── test_logger.py                  # Logger functionality (19 tests)
+│   ├── test_logger.py                  # Logger functionality (19 tests)
+│   └── test_country_codes.py           # Country codes functionality (15 tests)
 ├── 📁 integrations/                    # External service integration tests
 │   ├── __init__.py
 │   ├── 📁 openai_integration/          # OpenAI integration tests
@@ -40,21 +41,21 @@ tests/
 
 ## 📊 Test Statistics
 
-- **Total Test Modules**: 9
-- **Total Test Cases**: 147
+- **Total Test Modules**: 10
+- **Total Test Cases**: 177
 - **Test Categories**: 6
 - **Coverage Areas**: Utils, OpenAI, Telegram, Instagram, AdsPower, Integration
 
 ### Breakdown by Category
 
-| Category                      | Tests | Description                                          |
-| ----------------------------- | ----- | ---------------------------------------------------- |
-| 📝 **Utils**                  | 19    | Logger functionality, file operations, configuration |
-| 🤖 **OpenAI Integration**     | 22    | Comment generation, API interaction, validation      |
-| 📱 **Telegram Integration**   | 24    | Bot API, message sending, notifications              |
-| 💬 **Instagram Integration**  | 25    | Comment posting, browser automation, rate limiting   |
-| 🔌 **AdsPower Integration**   | 54    | Profile management, browser automation, workflows    |
-| 🔗 **End-to-End Integration** | 3     | Cross-module functionality, complete workflows       |
+| Category                      | Tests | Description                                        |
+| ----------------------------- | ----- | -------------------------------------------------- |
+| 📝 **Utils**                  | 34    | Logger functionality, country codes, configuration |
+| 🤖 **OpenAI Integration**     | 22    | Comment generation, API interaction, validation    |
+| 📱 **Telegram Integration**   | 24    | Bot API, message sending, notifications            |
+| 💬 **Instagram Integration**  | 25    | Comment posting, browser automation, rate limiting |
+| 🔌 **AdsPower Integration**   | 39    | Profile management, browser automation, workflows  |
+| 🔗 **End-to-End Integration** | 3     | Cross-module functionality, complete workflows     |
 
 ## 🚀 Running Tests
 
@@ -96,6 +97,7 @@ python -m pytest tests/integration/                    # Integration tests
 ```bash
 # Run specific test modules
 python -m pytest tests/utils/test_logger.py
+python -m pytest tests/utils/test_country_codes.py
 python -m pytest tests/integrations/openai_integration/test_comment_gen.py
 python -m pytest tests/integrations/telegram/test_notifier.py
 python -m pytest tests/integrations/instagram/test_poster.py
@@ -108,7 +110,7 @@ python -m pytest tests/integration/test_integration.py
 
 - **Location**: `tests/utils/`
 - **Purpose**: Test individual modules in isolation
-- **Examples**: Logger functionality, configuration management
+- **Examples**: Logger functionality, country codes mapping, configuration management
 
 ### Integration Tests
 
@@ -223,7 +225,7 @@ When contributing new tests:
 
 The organized test structure has achieved:
 
-- **147 total tests** across all modules
+- **177 total tests** across all modules
 - **100% success rate** for all test categories
 - **Improved maintainability** through logical organization
 - **Better developer experience** with clear test discovery
