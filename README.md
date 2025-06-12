@@ -103,7 +103,8 @@ instagram-automation/
 │           └── profile_manager.py # High-level profile manager
 ├── tests/                          # Comprehensive test suite
 │   ├── utils/                     # Utility module tests
-│   │   └── test_logger.py         # Logger functionality (19 tests)
+│   │   ├── test_logger.py         # Logger functionality (19 tests)
+│   │   └── test_country_codes.py  # Country codes functionality (15 tests)
 │   ├── integrations/              # Integration tests
 │   │   ├── openai_integration/    # OpenAI tests
 │   │   │   └── test_comment_gen.py # Comment generation (22 tests)
