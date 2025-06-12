@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-AdsPower Country Codes Module Tests
+Country Codes Module Tests
 
-Tests for the AdsPower country codes functionality including:
+Tests for the country codes functionality including:
 - Country code to name mapping
 - Country name lookup by code
 - Country search functionality
@@ -21,8 +21,8 @@ from src.utils.country_codes import (
 )
 
 
-class TestAdsPowerCountryCodes(unittest.TestCase):
-    """Test cases for AdsPower country codes functionality."""
+class TestCountryCodes(unittest.TestCase):
+    """Test cases for country codes functionality."""
 
     def setUp(self):
         """Set up test fixtures."""
@@ -165,8 +165,8 @@ class TestAdsPowerCountryCodes(unittest.TestCase):
                 self.assertEqual(COUNTRY_CODES[code], expected_name)
 
 
-class TestAdsPowerCountryCodesIntegration(unittest.TestCase):
-    """Integration tests for country codes with AdsPower functionality."""
+class TestCountryCodesIntegration(unittest.TestCase):
+    """Integration tests for country codes with application functionality."""
 
     def test_country_codes_with_profile_creation(self):
         """Test using country codes in profile creation context."""

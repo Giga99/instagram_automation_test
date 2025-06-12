@@ -27,8 +27,7 @@ def validate_test_imports() -> List[Tuple[str, bool, str]]:
         'test_adspower_client',
         'test_adspower_config',
         'test_adspower_profile_manager', 
-        'test_adspower_integration',
-        'test_adspower_country_codes'
+        'test_adspower_integration'
     ]
     
     results = []
