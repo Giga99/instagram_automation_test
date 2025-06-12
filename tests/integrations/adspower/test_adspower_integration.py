@@ -66,8 +66,12 @@ class TestAdsPowerIntegration(unittest.TestCase):
         profiles = load_adspower_profiles()
         self.assertEqual(len(profiles), 2)
 
-    def test_workflow_adspower_not_running(self):
+    @patch('src.integrations.adspower.config.client')
+    def test_workflow_adspower_not_running(self, mock_client):
         """Test workflow when AdsPower is not running."""
+        # Mock AdsPower not running
+        mock_client.check_connection.return_value = False
+
         # Test config loading fails gracefully
         profiles = load_adspower_profiles()
         self.assertEqual(len(profiles), 0)

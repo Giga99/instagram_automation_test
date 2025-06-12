@@ -22,6 +22,7 @@ class AdsPowerProfileGroup:
     """Represents an AdsPower profile group."""
     id: str
     name: Optional[str] = None
+    remark: Optional[str] = None
 
 
 @dataclass
@@ -104,10 +105,10 @@ class AdsPowerClient:
             if data.get("code") == 0 and "data" in data:
                 for profile_data in data["data"].get("list", []):
                     try:
-                        logger.error(f"Profile data: {str(profile_data)}")
                         profile_group = AdsPowerProfileGroup(
                             id=profile_data.get("group_id"),
-                            name=profile_data.get("group_name")
+                            name=profile_data.get("group_name"),
+                            remark=profile_data.get("group_remark")
                         ) if profile_data.get("group_id") and profile_data.get("group_id") != "0" else None
                         profile = AdsPowerProfile(
                             profile_id=profile_data.get("user_id"),
@@ -119,7 +120,6 @@ class AdsPowerClient:
                             created_at=parse_timestamp(profile_data.get("created_time")),
                             last_open_time=parse_timestamp(profile_data.get("last_open_time")),
                         )
-                        logger.error(f"Parsed Profile data: {str(profile)}")
                         profiles.append(profile)
                     except Exception as e:
                         logger.error(f"Failed to parse profile: {str(e)}")
@@ -212,12 +212,12 @@ class AdsPowerClient:
             logger.error(f"Failed to check profile status {profile_id}: {str(e)}")
             return "Error"
 
-    def get_groups(self) -> List[Dict[str, Any]]:
+    def get_groups(self) -> List[AdsPowerProfileGroup]:
         """
         Get all profile groups.
         
         Returns:
-            List of group dictionaries
+            List of AdsPowerProfileGroup objects
         """
         try:
             url = f"{self.base_url}/api/v1/group/list"
@@ -225,10 +225,64 @@ class AdsPowerClient:
             response.raise_for_status()
 
             data = response.json()
-            if data.get("code") == 0:
-                return data.get("data", [])
-            return []
+            groups = []
+
+            if data.get("code") == 0 and "data" in data:
+                group_list = data["data"]
+                if isinstance(group_list, dict) and "list" in group_list:
+                    group_list = group_list["list"]
+                
+                for group_data in group_list:
+                    try:
+                        group = AdsPowerProfileGroup(
+                            id=group_data.get("group_id"),
+                            name=group_data.get("group_name"),
+                            remark=group_data.get("remark")
+                        )
+                        groups.append(group)
+                    except Exception as e:
+                        logger.error(f"Failed to parse group: {str(e)}")
+
+            return groups
 
         except Exception as e:
             logger.error(f"Failed to get groups: {str(e)}")
             return []
+
+    def create_group(self, name: str, remark: Optional[str] = None) -> Optional[AdsPowerProfileGroup]:
+        """
+        Create a new profile group.
+        
+        Args:
+            name: Name of the group to create
+            remark: Optional remark/description for the group
+            
+        Returns:
+            AdsPowerProfileGroup object if successful, None otherwise
+        """
+        try:
+            url = f"{self.base_url}/api/v1/group/create"
+            data = {
+                "group_name": name
+            }
+            if remark:
+                data["remark"] = remark
+
+            response = self.session.post(url, json=data)
+            response.raise_for_status()
+
+            result = response.json()
+            if result.get("code") == 0 and "data" in result:
+                group_data = result["data"]
+                return AdsPowerProfileGroup(
+                    id=group_data.get("group_id"),
+                    name=group_data.get("group_name"),
+                    remark=group_data.get("remark")
+                )
+            else:
+                logger.error(f"Failed to create group '{name}': {result.get('msg')}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to create group '{name}': {str(e)}")
+            return None

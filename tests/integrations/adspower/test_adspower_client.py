@@ -308,6 +308,121 @@ class TestAdsPowerClient(unittest.TestCase):
         status = self.client.check_profile_status(self.test_profile_id)
         self.assertEqual(status, "Error")
 
+    @patch('requests.Session.get')
+    def test_get_groups_success(self, mock_get):
+        """Test successful groups retrieval."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "code": 0,
+            "data": [
+                {
+                    "group_id": "group_001",
+                    "group_name": "Instagram Automation",
+                    "remark": "Profiles for Instagram automation"
+                },
+                {
+                    "group_id": "group_002", 
+                    "group_name": "Test Profiles",
+                    "remark": None
+                }
+            ]
+        }
+        mock_get.return_value = mock_response
+
+        groups = self.client.get_groups()
+        self.assertEqual(len(groups), 2)
+        self.assertIsInstance(groups[0], AdsPowerProfileGroup)
+        self.assertEqual(groups[0].id, "group_001")
+        self.assertEqual(groups[0].name, "Instagram Automation")
+        self.assertEqual(groups[0].remark, "Profiles for Instagram automation")
+
+    @patch('requests.Session.get')
+    def test_get_groups_empty(self, mock_get):
+        """Test groups retrieval when no groups exist."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "code": 0,
+            "data": []
+        }
+        mock_get.return_value = mock_response
+
+        groups = self.client.get_groups()
+        self.assertEqual(len(groups), 0)
+
+    @patch('requests.Session.get')
+    def test_get_groups_network_error(self, mock_get):
+        """Test groups retrieval with network error."""
+        mock_get.side_effect = requests.exceptions.ConnectionError("Network error")
+
+        groups = self.client.get_groups()
+        self.assertEqual(len(groups), 0)
+
+    @patch('requests.Session.post')
+    def test_create_group_success(self, mock_post):
+        """Test successful group creation."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "code": 0,
+            "data": {
+                "group_id": "group_new",
+                "group_name": "New Test Group",
+                "remark": "Test group description"
+            }
+        }
+        mock_post.return_value = mock_response
+
+        group = self.client.create_group("New Test Group", "Test group description")
+        self.assertIsNotNone(group)
+        self.assertEqual(group.id, "group_new")
+        self.assertEqual(group.name, "New Test Group")
+        self.assertEqual(group.remark, "Test group description")
+
+    @patch('requests.Session.post')
+    def test_create_group_without_remark(self, mock_post):
+        """Test group creation without remark."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "code": 0,
+            "data": {
+                "group_id": "group_new",
+                "group_name": "New Test Group",
+                "remark": None
+            }
+        }
+        mock_post.return_value = mock_response
+
+        group = self.client.create_group("New Test Group")
+        self.assertIsNotNone(group)
+        self.assertEqual(group.id, "group_new")
+        self.assertEqual(group.name, "New Test Group")
+        self.assertIsNone(group.remark)
+
+    @patch('requests.Session.post')
+    def test_create_group_api_error(self, mock_post):
+        """Test group creation with API error."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "code": 1,
+            "msg": "Group name already exists"
+        }
+        mock_post.return_value = mock_response
+
+        group = self.client.create_group("Existing Group")
+        self.assertIsNone(group)
+
+    @patch('requests.Session.post')
+    def test_create_group_network_error(self, mock_post):
+        """Test group creation with network error."""
+        mock_post.side_effect = requests.exceptions.ConnectionError("Network error")
+
+        group = self.client.create_group("New Group")
+        self.assertIsNone(group)
+
 
 class TestAdsPowerProfile(unittest.TestCase):
     """Test cases for AdsPowerProfile dataclass."""
@@ -343,17 +458,26 @@ class TestAdsPowerProfile(unittest.TestCase):
 class TestAdsPowerProfileGroup(unittest.TestCase):
     """Test cases for AdsPowerProfileGroup dataclass."""
 
-    def test_profile_group_creation(self):
-        """Test creating a profile group."""
-        group = AdsPowerProfileGroup(id="group_123", name="Test Group")
+    def test_profile_group_creation_full(self):
+        """Test creating a profile group with all fields."""
+        group = AdsPowerProfileGroup(id="group_123", name="Test Group", remark="Test description")
         self.assertEqual(group.id, "group_123")
         self.assertEqual(group.name, "Test Group")
+        self.assertEqual(group.remark, "Test description")
 
-    def test_profile_group_no_name(self):
-        """Test creating a profile group without name."""
+    def test_profile_group_creation_minimal(self):
+        """Test creating a profile group with minimal fields."""
         group = AdsPowerProfileGroup(id="group_123")
         self.assertEqual(group.id, "group_123")
         self.assertIsNone(group.name)
+        self.assertIsNone(group.remark)
+
+    def test_profile_group_with_name_only(self):
+        """Test creating a profile group with name but no remark."""
+        group = AdsPowerProfileGroup(id="group_123", name="Test Group")
+        self.assertEqual(group.id, "group_123")
+        self.assertEqual(group.name, "Test Group")
+        self.assertIsNone(group.remark)
 
 
 if __name__ == '__main__':

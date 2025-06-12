@@ -12,7 +12,8 @@ import importlib
 from typing import List, Tuple
 
 # Add project root to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, project_root)
 
 
 def validate_test_imports() -> List[Tuple[str, bool, str]]:
@@ -26,14 +27,15 @@ def validate_test_imports() -> List[Tuple[str, bool, str]]:
         'test_adspower_client',
         'test_adspower_config',
         'test_adspower_profile_manager', 
-        'test_adspower_integration'
+        'test_adspower_integration',
+        'test_adspower_country_codes'
     ]
     
     results = []
     
     for module_name in test_modules:
         try:
-            module = importlib.import_module(f'tests.{module_name}')
+            module = importlib.import_module(f'tests.integrations.adspower.{module_name}')
             results.append((module_name, True, ""))
             print(f"✅ {module_name}: Import successful")
         except ImportError as e:
@@ -58,7 +60,8 @@ def validate_source_modules() -> List[Tuple[str, bool, str]]:
     source_modules = [
         'src.integrations.adspower.client',
         'src.integrations.adspower.config',
-        'src.integrations.adspower.profile_manager'
+        'src.integrations.adspower.profile_manager',
+        'src.utils.country_codes'
     ]
     
     results = []
@@ -131,6 +134,24 @@ def validate_test_classes() -> List[Tuple[str, bool, str]]:
         error_msg = f"Config validation error: {str(e)}"
         test_validations.append(("Config functions", False, error_msg))
         print(f"❌ Config functions: {error_msg}")
+    
+    try:
+        # Test country codes functions
+        from src.utils.country_codes import COUNTRY_CODES, get_country_name, get_country_codes, search_countries
+        
+        # Test basic functionality
+        test_name = get_country_name('us')
+        if test_name == 'United States of America (USA)':
+            test_validations.append(("Country codes functions", True, ""))
+            print("✅ Country codes functions: Import and basic test successful")
+        else:
+            test_validations.append(("Country codes functions", False, f"Unexpected result: {test_name}"))
+            print(f"❌ Country codes functions: Unexpected result: {test_name}")
+        
+    except Exception as e:
+        error_msg = f"Country codes validation error: {str(e)}"
+        test_validations.append(("Country codes functions", False, error_msg))
+        print(f"❌ Country codes functions: {error_msg}")
     
     return test_validations
 

@@ -6,8 +6,8 @@ Simple loader for existing AdsPower profiles configured for Instagram automation
 
 from typing import Dict, List, Any
 
-from .client import AdsPowerClient
 from src.utils.config import config
+from src.integrations.adspower.client import AdsPowerClient
 
 # Initialize AdsPower client
 client = AdsPowerClient(config.adspower_base_url, config.adspower_api_key)
@@ -90,6 +90,63 @@ def load_adspower_profiles() -> List[Dict[str, Any]]:
         return []
 
 
+def load_adspower_groups() -> List[Dict[str, Any]]:
+    """
+    Load all AdsPower groups.
+    
+    Returns:
+        List of group dictionaries
+    """
+    try:
+        # Get all groups from AdsPower
+        groups = client.get_groups()
+        
+        formatted_groups = []
+        for group in groups:
+            formatted_group = {
+                "id": group.id,
+                "name": group.name,
+                "remark": group.remark
+            }
+            formatted_groups.append(formatted_group)
+            
+        return formatted_groups
+        
+    except Exception as e:
+        print(f"❌ Error loading AdsPower groups: {str(e)}")
+        return []
+
+
+def create_adspower_group(name: str, remark: str = None) -> Dict[str, Any]:
+    """
+    Create a new AdsPower group.
+    
+    Args:
+        name: Name of the group to create
+        remark: Optional remark/description for the group
+        
+    Returns:
+        Dictionary with group info or None if failed
+    """
+    try:
+        group = client.create_group(name, remark)
+        
+        if group:
+            print(f"✅ Created group: {group.name} (ID: {group.id})")
+            return {
+                "id": group.id,
+                "name": group.name,
+                "remark": group.remark
+            }
+        else:
+            print(f"❌ Failed to create group: {name}")
+            return None
+            
+    except Exception as e:
+        print(f"❌ Error creating group '{name}': {str(e)}")
+        return None
+
+
 def test_adspower_connection() -> bool:
     """
     Test connection to AdsPower API.
@@ -123,10 +180,16 @@ if __name__ == "__main__":
         profiles = load_adspower_profiles()
         print(f"\n📊 Results: {len(profiles)} profiles ready for automation")
 
-        if profiles:
+        # Load groups
+        groups = load_adspower_groups()
+        print(f"\n📁 Found {len(groups)} groups")
+
+        if profiles and groups:
             print("\n🎯 Ready to run: python main.py")
-        else:
+        elif groups:
             print("\n💡 Create profiles in AdsPower desktop app first")
+        else:
+            print("\n💡 Create groups in AdsPower desktop app first")
     else:
         print("❌ AdsPower connection failed!")
         print("💡 Please start AdsPower desktop application")

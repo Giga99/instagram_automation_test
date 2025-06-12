@@ -14,7 +14,12 @@ from unittest.mock import patch
 
 from src.integrations.adspower.client import AdsPowerProfile, AdsPowerProfileGroup
 # Import the modules to test
-from src.integrations.adspower.config import load_adspower_profiles, test_adspower_connection
+from src.integrations.adspower.config import (
+    load_adspower_profiles, 
+    test_adspower_connection,
+    load_adspower_groups,
+    create_adspower_group
+)
 
 
 class TestAdsPowerConfig(unittest.TestCase):
@@ -123,14 +128,118 @@ class TestAdsPowerConfig(unittest.TestCase):
 
         self.assertFalse(result)
 
-    @patch('src.integrations.adspower.config.AdsPowerClient')
-    def test_test_adspower_connection_exception(self, mock_client_class):
+    @patch('src.integrations.adspower.config.client.check_connection')
+    def test_test_adspower_connection_exception(self, mock_check_connection):
         """Test AdsPower connection test with exception."""
-        mock_client_class.side_effect = Exception("Connection error")
+        mock_check_connection.side_effect = Exception("Connection error")
 
         result = test_adspower_connection()
 
         self.assertFalse(result)
+
+
+class TestAdsPowerGroupConfig(unittest.TestCase):
+    """Test cases for AdsPower group configuration functions."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.sample_adspower_groups = [
+            AdsPowerProfileGroup(
+                id="group_001",
+                name="Instagram Automation",
+                remark="Profiles for Instagram automation"
+            ),
+            AdsPowerProfileGroup(
+                id="group_002",
+                name="Test Profiles",
+                remark=None
+            )
+        ]
+
+    @patch('src.integrations.adspower.config.client')
+    def test_load_adspower_groups_success(self, mock_client):
+        """Test successful loading of AdsPower groups from API."""
+        mock_client.get_groups.return_value = self.sample_adspower_groups
+
+        groups = load_adspower_groups()
+
+        self.assertEqual(len(groups), 2)
+        self.assertEqual(groups[0]['id'], "group_001")
+        self.assertEqual(groups[0]['name'], "Instagram Automation")
+        self.assertEqual(groups[0]['remark'], "Profiles for Instagram automation")
+        self.assertEqual(groups[1]['id'], "group_002")
+        self.assertEqual(groups[1]['name'], "Test Profiles")
+        self.assertIsNone(groups[1]['remark'])
+
+    @patch('src.integrations.adspower.config.client')
+    def test_load_adspower_groups_empty(self, mock_client):
+        """Test loading groups when no groups exist."""
+        mock_client.get_groups.return_value = []
+
+        groups = load_adspower_groups()
+
+        self.assertEqual(len(groups), 0)
+
+    @patch('src.integrations.adspower.config.client')
+    def test_load_adspower_groups_api_error(self, mock_client):
+        """Test loading groups when API throws an error."""
+        mock_client.get_groups.side_effect = Exception("API Error")
+
+        groups = load_adspower_groups()
+
+        self.assertEqual(len(groups), 0)
+
+    @patch('src.integrations.adspower.config.client')
+    def test_create_adspower_group_success(self, mock_client):
+        """Test successful group creation."""
+        new_group = AdsPowerProfileGroup(
+            id="group_new",
+            name="New Test Group",
+            remark="Test group description"
+        )
+        mock_client.create_group.return_value = new_group
+
+        result = create_adspower_group("New Test Group", "Test group description")
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result['id'], "group_new")
+        self.assertEqual(result['name'], "New Test Group")
+        self.assertEqual(result['remark'], "Test group description")
+
+    @patch('src.integrations.adspower.config.client')
+    def test_create_adspower_group_without_remark(self, mock_client):
+        """Test group creation without remark."""
+        new_group = AdsPowerProfileGroup(
+            id="group_new",
+            name="New Test Group",
+            remark=None
+        )
+        mock_client.create_group.return_value = new_group
+
+        result = create_adspower_group("New Test Group")
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result['id'], "group_new")
+        self.assertEqual(result['name'], "New Test Group")
+        self.assertIsNone(result['remark'])
+
+    @patch('src.integrations.adspower.config.client')
+    def test_create_adspower_group_failure(self, mock_client):
+        """Test group creation failure."""
+        mock_client.create_group.return_value = None
+
+        result = create_adspower_group("Existing Group")
+
+        self.assertIsNone(result)
+
+    @patch('src.integrations.adspower.config.client')
+    def test_create_adspower_group_api_error(self, mock_client):
+        """Test group creation with API error."""
+        mock_client.create_group.side_effect = Exception("API Error")
+
+        result = create_adspower_group("New Group")
+
+        self.assertIsNone(result)
 
 
 if __name__ == '__main__':
