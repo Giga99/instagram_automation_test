@@ -6,14 +6,15 @@ Simple loader for existing AdsPower profiles configured for Instagram automation
 
 from typing import Dict, List, Any
 
-from src.utils.config import config
 from src.integrations.adspower.client import AdsPowerClient
+from src.models import AutomationProfile
+from src.utils.config import config
 
 # Initialize AdsPower client
 client = AdsPowerClient(config.adspower_base_url, config.adspower_api_key)
 
 
-def load_adspower_profiles() -> List[Dict[str, Any]]:
+def load_adspower_profiles() -> List[AutomationProfile]:
     """
     Load existing AdsPower profiles for Instagram automation.
     
@@ -41,48 +42,20 @@ def load_adspower_profiles() -> List[Dict[str, Any]]:
 
         print(f"Got total: {len(all_profiles)} profiles from AdsPower API. Filtering and formatting...")
 
-        # Filter and format profiles for Instagram automation
-        instagram_profiles = []
+        # Convert AdsPower profiles to unified AutomationProfile objects
+        automation_profiles = []
 
-        for profile_data in all_profiles:
-            profile_id = profile_data.profile_id
-            username = profile_data.username
-            password = profile_data.password
-            profile_name = profile_data.name
-            group_name = profile_data.group.name if profile_data.group else None
-            created_at = profile_data.created_at
-            last_open_time = profile_data.last_open_time
+        for adspower_profile in all_profiles:
+            # Convert to unified AutomationProfile
+            automation_profile = AutomationProfile.from_adspower(adspower_profile)
+            automation_profiles.append(automation_profile)
 
-            # Convert to automation format
-            formatted_profile = {
-                "id": profile_id,
-                "username": username,
-                "password": password,
-                "profile_name": profile_name,
-                "is_adspower": True,
-                "group": group_name,
-                "priority": 1,
-                "settings": {
-                    "delay_between_profiles": 30,
-                    "retry_attempts": 3
-                },
-                "health": {
-                    "status": "healthy",
-                    "last_used": None,
-                    "success_rate": 100
-                },
-                "created_at": created_at,
-                "last_open_time": last_open_time
-            }
+        print(f"✅ Found {len(automation_profiles)} AdsPower profiles:")
+        for profile in automation_profiles:
+            group_info = f" ({profile.group.name})" if profile.group else ""
+            print(f"   • {profile.id}{group_info}")
 
-            instagram_profiles.append(formatted_profile)
-
-        print(f"✅ Found {len(instagram_profiles)} AdsPower profiles:")
-        for profile in instagram_profiles:
-            group_info = f" ({profile['group']})" if profile['group'] else ""
-            print(f"   • {profile['id']}{group_info}")
-
-        return instagram_profiles
+        return automation_profiles
 
     except Exception as e:
         print(f"❌ Error loading AdsPower profiles: {str(e)}")
@@ -100,7 +73,7 @@ def load_adspower_groups() -> List[Dict[str, Any]]:
     try:
         # Get all groups from AdsPower
         groups = client.get_groups()
-        
+
         formatted_groups = []
         for group in groups:
             formatted_group = {
@@ -109,9 +82,9 @@ def load_adspower_groups() -> List[Dict[str, Any]]:
                 "remark": group.remark
             }
             formatted_groups.append(formatted_group)
-            
+
         return formatted_groups
-        
+
     except Exception as e:
         print(f"❌ Error loading AdsPower groups: {str(e)}")
         return []
@@ -130,7 +103,7 @@ def create_adspower_group(name: str, remark: str = None) -> Dict[str, Any]:
     """
     try:
         group = client.create_group(name, remark)
-        
+
         if group:
             print(f"✅ Created group: {group.name} (ID: {group.id})")
             return {
@@ -141,7 +114,7 @@ def create_adspower_group(name: str, remark: str = None) -> Dict[str, Any]:
         else:
             print(f"❌ Failed to create group: {name}")
             return None
-            
+
     except Exception as e:
         print(f"❌ Error creating group '{name}': {str(e)}")
         return None
@@ -179,17 +152,12 @@ if __name__ == "__main__":
         # Load profiles
         profiles = load_adspower_profiles()
         print(f"\n📊 Results: {len(profiles)} profiles ready for automation")
+        for profile in profiles:
+            print(f"Proxy info: {profile['proxy_config']}")
 
         # Load groups
         groups = load_adspower_groups()
         print(f"\n📁 Found {len(groups)} groups")
-
-        if profiles and groups:
-            print("\n🎯 Ready to run: python main.py")
-        elif groups:
-            print("\n💡 Create profiles in AdsPower desktop app first")
-        else:
-            print("\n💡 Create groups in AdsPower desktop app first")
     else:
         print("❌ AdsPower connection failed!")
         print("💡 Please start AdsPower desktop application")

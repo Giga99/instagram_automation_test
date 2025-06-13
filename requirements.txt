@@ -2,7 +2,7 @@
 
 # Core dependencies
 python-dotenv>=1.0.0
-requests>=2.31.0
+requests>=2.32.4
 
 # OpenAI integration for comment generation  
 openai>=1.51.0,<2.0.0
@@ -25,6 +25,6 @@ adspower-sdk>=0.1.8
 
 # Additional useful packages
 beautifulsoup4>=4.12.0  # For HTML parsing if needed
-urllib3>=2.0.0          # For robust HTTP handling 
+urllib3>=2.2.2          # For robust HTTP handling
 
 # Note: After installing playwright, run: playwright install chromium 

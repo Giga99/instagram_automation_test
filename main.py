@@ -23,16 +23,17 @@ from src.integrations.instagram.poster import post_comment, simulate_post, POST_
 from src.integrations.openai.comment_gen import generate_comment, validate_comment
 from src.integrations.telegram.notifier import send_completion_notification, send_error_notification, \
     send_progress_notification
+from src.models import AutomationProfile, ProfileResult
 from src.utils.config import config
 from src.utils.logger import init_logger, write_log_entry, get_current_timestamp, get_log_summary
 
 
-def load_profile_configs() -> List[Dict[str, any]]:
+def load_profile_configs() -> List[AutomationProfile]:
     """
     Load profiles from AdsPower configuration.
     
     Returns:
-        List of AdsPower profile dictionaries ready for automation
+        List of AutomationProfile objects ready for automation
     """
     print("🏢 Loading profiles from AdsPower...")
 
@@ -52,32 +53,32 @@ def load_profile_configs() -> List[Dict[str, any]]:
         return []
 
 
-def process_single_profile(playwright: Playwright, profile: Dict[str, str],
-                           target_post_url: str, headless_mode: bool, comment_prompt: str) -> Dict[str, Any]:
+def process_single_profile(playwright: Playwright, profile: AutomationProfile,
+                           target_post_url: str, headless_mode: bool, comment_prompt: str) -> ProfileResult:
     """
     Processes a single AdsPower profile through the complete automation workflow.
     
     Args:
         playwright: Playwright instance
-        profile: AdsPower profile configuration dictionary
+        profile: AutomationProfile object
         target_post_url: Instagram post URL to comment on
         headless_mode: Headless mode flag for AdsPower session
         comment_prompt: Prompt for comment generation
         
     Returns:
-        Dictionary with processing results
+        ProfileResult object with processing results
     """
-    profile_id = profile["id"]
-    username = profile["username"]
-    password = profile["password"]
+    profile_id = profile.id
+    username = profile.username
+    password = profile.password
 
-    result = {
-        "profile_id": profile_id,
-        "success": False,
-        "comment": "",
-        "error": None,
-        "timestamp": get_current_timestamp()
-    }
+    result = ProfileResult(
+        profile_id=profile_id,
+        success=False,
+        comment="",
+        error=None,
+        timestamp=get_current_timestamp()
+    )
 
     context = None
     adspower_manager = None
@@ -95,12 +96,13 @@ def process_single_profile(playwright: Playwright, profile: Dict[str, str],
         if not comment or not validate_comment(comment):
             error_msg = "Failed to generate valid comment"
             print(f"❌ [{profile_id}] {error_msg}")
-            result["error"] = error_msg
-            write_log_entry(profile_id, "", result["timestamp"], error_msg)
+            result.error = error_msg
+            profile.update_failure(error_msg)
+            write_log_entry(profile_id, "", result.timestamp, error_msg)
             send_error_notification(error_msg, profile_id)
             return result
 
-        result["comment"] = comment
+        result.comment = comment
         print(f"✅ [{profile_id}] Generated comment: {comment}")
 
         # Step 2: Connect to AdsPower profile
@@ -118,8 +120,9 @@ def process_single_profile(playwright: Playwright, profile: Dict[str, str],
         if not context:
             error_msg = "Failed to connect to AdsPower profile"
             print(f"❌ [{profile_id}] {error_msg}")
-            result["error"] = error_msg
-            write_log_entry(profile_id, comment, result["timestamp"], error_msg)
+            result.error = error_msg
+            profile.update_failure(error_msg)
+            write_log_entry(profile_id, comment, result.timestamp, error_msg)
             send_error_notification(error_msg, profile_id)
             return result
 
@@ -138,21 +141,24 @@ def process_single_profile(playwright: Playwright, profile: Dict[str, str],
 
         if post_success:
             print(f"✅ [{profile_id}] Comment posted successfully!")
-            result["success"] = True
-            write_log_entry(profile_id, comment, result["timestamp"])
+            result.success = True
+            profile.update_success()
+            write_log_entry(profile_id, comment, result.timestamp)
             send_progress_notification(profile_id, "Comment posted successfully", comment)
         else:
             error_msg = "Failed to post comment"
             print(f"❌ [{profile_id}] {error_msg}")
-            result["error"] = error_msg
-            write_log_entry(profile_id, comment, result["timestamp"], error_msg)
+            result.error = error_msg
+            profile.update_failure(error_msg)
+            write_log_entry(profile_id, comment, result.timestamp, error_msg)
             send_error_notification(error_msg, profile_id)
 
     except Exception as e:
         error_msg = f"Unexpected error: {str(e)}"
         print(f"💥 [{profile_id}] {error_msg}")
-        result["error"] = error_msg
-        write_log_entry(profile_id, result.get("comment", ""), result["timestamp"], error_msg)
+        result.error = error_msg
+        profile.update_failure(error_msg)
+        write_log_entry(profile_id, result.comment, result.timestamp, error_msg)
         send_error_notification(error_msg, profile_id)
 
     finally:
@@ -190,9 +196,9 @@ def main():
     print(f"👥 Found {len(profiles)} AdsPower profile(s):")
     for p in profiles:
         profile_type = "AdsPower"
-        if p.get('group'):
-            profile_type += f" - ({p['group']})"
-        print(f"   • {p['id']}{profile_type}")
+        if p.group:
+            profile_type += f" - ({p.group.name})"
+        print(f"   • {p.id} {profile_type}")
 
     # Check target post URL
     if not config.instagram_post_url:
@@ -226,10 +232,10 @@ def main():
 
                 results.append(result)
 
-                if result["success"]:
-                    successful_profiles.append(result["profile_id"])
+                if result.success:
+                    successful_profiles.append(result.profile_id)
                 else:
-                    failed_profiles.append(result["profile_id"])
+                    failed_profiles.append(result.profile_id)
 
                 # Add intelligent delay between profiles
                 if i < len(profiles):
@@ -237,13 +243,15 @@ def main():
                     next_profile = profiles[i] if i < len(profiles) else None
 
                     # Use profile-specific delay or default
-                    delay = current_profile.get('settings', {}).get('delay_between_profiles', 30)
+                    delay = current_profile.settings.delay_between_profiles
 
                     # Add extra delay for different groups
-                    if next_profile and current_profile.get('group') != next_profile.get('group'):
+                    current_group = current_profile.group.name if current_profile.group else 'default'
+                    next_group = next_profile.group.name if next_profile and next_profile.group else 'default'
+                    
+                    if next_profile and current_group != next_group:
                         delay += 10  # Extra 10 seconds for group switching
-                        print(
-                            f"🔄 Switching from group '{current_profile.get('group', 'default')}' to '{next_profile.get('group', 'default')}'")
+                        print(f"🔄 Switching from group '{current_group}' to '{next_group}'")
 
                     print(f"⏳ Waiting {delay} seconds before next profile...")
                     time.sleep(delay)
@@ -252,8 +260,8 @@ def main():
                 print("\n⚠️ Process interrupted by user")
                 break
             except Exception as e:
-                print(f"💥 Critical error processing {profile['id']}: {str(e)}")
-                failed_profiles.append(profile["id"])
+                print(f"💥 Critical error processing {profile.id}: {str(e)}")
+                failed_profiles.append(profile.id)
                 continue
 
     # Generate summary

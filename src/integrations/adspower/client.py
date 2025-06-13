@@ -6,39 +6,15 @@ This module handles profile operations, browser automation, and session manageme
 """
 
 import logging
-from dataclasses import dataclass
-from datetime import datetime
 from typing import Dict, List, Optional, Any
 
 import requests
 
+from src.integrations.adspower.models import AdsPowerProfile, AdsPowerProfileGroup, AdsPowerProxyConfig, \
+    AdsPowerProxyType, AdsPowerProxySoft
 from src.utils.date_utils import parse_timestamp
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class AdsPowerProfileGroup:
-    """Represents an AdsPower profile group."""
-    id: str
-    name: Optional[str] = None
-    remark: Optional[str] = None
-
-
-@dataclass
-class AdsPowerProfile:
-    """Represents an AdsPower profile configuration."""
-    profile_id: str
-    name: str
-    created_at: Optional[datetime] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
-    domain_name: Optional[str] = None
-    group: Optional[AdsPowerProfileGroup] = None
-    last_open_time: Optional[datetime] = None
-    # proxy_config: Optional[Dict[str, Any]] = None TODO check if this is needed
-    # fingerprint_config: Optional[Dict[str, Any]] = None
-    # platform_config: Optional[Dict[str, Any]] = None
 
 
 class AdsPowerClient:
@@ -105,11 +81,26 @@ class AdsPowerClient:
             if data.get("code") == 0 and "data" in data:
                 for profile_data in data["data"].get("list", []):
                     try:
+                        group_id = profile_data.get("group_id")
                         profile_group = AdsPowerProfileGroup(
-                            id=profile_data.get("group_id"),
-                            name=profile_data.get("group_name"),
-                            remark=profile_data.get("group_remark")
-                        ) if profile_data.get("group_id") and profile_data.get("group_id") != "0" else None
+                            id=group_id,
+                            name=profile_data.get("group_name")
+                        ) if group_id and group_id != "0" else None
+
+                        proxy_id = profile_data.get("fbcc_proxy_acc_id")
+                        user_proxy_config = profile_data.get("user_proxy_config")
+                        proxy_config = AdsPowerProxyConfig(
+                            id=proxy_id,
+                            proxy_soft=AdsPowerProxySoft(user_proxy_config.get("proxy_soft")),
+                            proxy_type=AdsPowerProxyType(user_proxy_config.get("proxy_type")),
+                            proxy_host=user_proxy_config.get("proxy_host"),
+                            proxy_port=user_proxy_config.get("proxy_port"),
+                            proxy_user=user_proxy_config.get("proxy_user"),
+                            proxy_password=user_proxy_config.get("proxy_password"),
+                            proxy_url=user_proxy_config.get("proxy_url"),
+                            global_config=user_proxy_config.get("global_config")
+                        ) if proxy_id and proxy_id != "0" and user_proxy_config else None
+
                         profile = AdsPowerProfile(
                             profile_id=profile_data.get("user_id"),
                             name=profile_data.get("name"),
@@ -119,6 +110,7 @@ class AdsPowerClient:
                             group=profile_group,
                             created_at=parse_timestamp(profile_data.get("created_time")),
                             last_open_time=parse_timestamp(profile_data.get("last_open_time")),
+                            proxy_config=proxy_config,
                         )
                         profiles.append(profile)
                     except Exception as e:
@@ -221,7 +213,8 @@ class AdsPowerClient:
         """
         try:
             url = f"{self.base_url}/api/v1/group/list"
-            response = self.session.get(url)
+            params = {"page": 1, "page_size": 100}
+            response = self.session.get(url, params=params)
             response.raise_for_status()
 
             data = response.json()
@@ -231,7 +224,7 @@ class AdsPowerClient:
                 group_list = data["data"]
                 if isinstance(group_list, dict) and "list" in group_list:
                     group_list = group_list["list"]
-                
+
                 for group_data in group_list:
                     try:
                         group = AdsPowerProfileGroup(
