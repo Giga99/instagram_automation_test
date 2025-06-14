@@ -71,6 +71,7 @@ class AdsPowerClient:
                 params["group_id"] = group_id
             params["page"] = 1
             params["page_size"] = 100
+            params["user_id"] = "kyjb303"
 
             response = self.session.get(url, params=params)
             response.raise_for_status()

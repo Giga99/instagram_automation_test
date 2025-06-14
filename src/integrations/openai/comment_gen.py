@@ -9,6 +9,7 @@ import time
 from typing import List
 
 from openai import OpenAI
+from src.utils.config import config
 
 
 def generate_comment(prompt: str, max_retries: int = 3) -> str | None:
@@ -25,7 +26,7 @@ def generate_comment(prompt: str, max_retries: int = 3) -> str | None:
     Raises:
         Exception: If OpenAI API call fails after all retries
     """
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = config.openai_api_key
     if not api_key:
         raise ValueError("OPENAI_API_KEY environment variable is not set")
 

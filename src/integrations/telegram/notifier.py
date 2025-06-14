@@ -4,11 +4,12 @@ Notifier Module
 Handles sending Telegram notifications upon completion of comment posting.
 """
 
-import os
 import time
 from typing import Optional, Dict, Any
 
 import requests
+
+from src.utils.config import config
 
 
 class TelegramNotifier:
@@ -27,8 +28,8 @@ class TelegramNotifier:
             bot_token: Optional explicit bot token (defaults to TG_BOT_TOKEN env var)
             chat_id: Optional explicit chat ID (defaults to TG_CHAT_ID env var)
         """
-        self.bot_token = bot_token or os.getenv("TG_BOT_TOKEN")
-        self.chat_id = chat_id or os.getenv("TG_CHAT_ID")
+        self.bot_token = bot_token or config.telegram_bot_token
+        self.chat_id = chat_id or config.telegram_chat_id
 
         if not self.bot_token or not self.chat_id:
             raise ValueError(

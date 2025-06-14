@@ -11,6 +11,7 @@ from typing import Optional, Dict, Any, List
 from playwright.sync_api import BrowserContext, Playwright, Page, TimeoutError as PlaywrightTimeoutError
 
 from .client import AdsPowerClient, AdsPowerProfile
+from .css_scripts import HIDE_PASSWORD_BUTTON_CSS
 
 
 class AdsPowerProfileManager:
@@ -20,11 +21,12 @@ class AdsPowerProfileManager:
     This class provides integration between AdsPower's profile management
     and Playwright's browser automation capabilities.
     """
-    
-    def __init__(self, adspower_base_url: str = "http://localhost:50325", 
+
+    def __init__(self, adspower_base_url: str = "http://localhost:50325",
                  adspower_api_key: Optional[str] = None,
                  allow_credential_fallback: bool = True,
-                 credential_fallback_timeout: int = 60):
+                 credential_fallback_timeout: int = 60,
+                 should_inject_hide_password_css: bool = True):
         """
         Initialize the AdsPower profile manager.
         
@@ -33,12 +35,125 @@ class AdsPowerProfileManager:
             adspower_api_key: API key for headless mode (optional)
             allow_credential_fallback: Whether to allow automatic credential fallback when auto-login fails
             credential_fallback_timeout: Timeout in seconds for login completion
+            should_inject_hide_password_css: Whether to automatically inject CSS to hide password visibility buttons
         """
         self.adspower_client = AdsPowerClient(adspower_base_url, adspower_api_key)
         self.active_contexts: Dict[str, BrowserContext] = {}
         self.allow_credential_fallback = allow_credential_fallback
         self.credential_fallback_timeout = credential_fallback_timeout
-    
+        self.should_inject_hide_password_css = should_inject_hide_password_css
+
+    def inject_css_to_context(self, context: BrowserContext, css: str,
+                              identifier: str = "injected-styles") -> None:
+        """
+        Inject CSS styles into all pages in a browser context.
+        
+        Args:
+            context: The browser context to inject styles into
+            css: CSS styles to inject
+            identifier: Unique identifier for the injected styles
+        """
+        try:
+            # Inject CSS into all existing pages
+            for page in context.pages:
+                self._inject_css_to_page(page, css, identifier)
+
+            # Set up listener for new pages
+            def handle_new_page(page: Page):
+                self._inject_css_to_page(page, css, identifier)
+
+            context.on("page", handle_new_page)
+
+        except Exception as e:
+            print(f"⚠️ Failed to inject CSS: {str(e)}")
+
+    def _inject_css_to_page(self, page: Page, css: str, identifier: str) -> None:
+        """
+        Inject CSS styles into a specific page.
+        
+        Args:
+            page: The page to inject styles into
+            css: CSS styles to inject
+            identifier: Unique identifier for the injected styles
+        """
+        try:
+            # Use Playwright's built-in addInitScript for more reliable injection
+            init_script = f"""
+            (() => {{
+                function injectStyles() {{
+                    // Remove existing styles with same identifier
+                    const existing = document.getElementById('{identifier}');
+                    if (existing) existing.remove();
+                    
+                    // Add new styles
+                    const style = document.createElement('style');
+                    style.id = '{identifier}';
+                    style.textContent = `{css}`;
+                    document.head.appendChild(style);
+                }}
+                
+                // Wait for DOM to be ready
+                if (document.readyState === 'loading') {{
+                    document.addEventListener('DOMContentLoaded', injectStyles);
+                }} else {{
+                    injectStyles();
+                }}
+            }})();
+            """
+
+            # Add script to run on page load
+            page.add_init_script(init_script)
+
+            # Also try to inject immediately using Playwright's method
+            if page.url and page.url != "about:blank":
+                try:
+                    page.add_style_tag(content=css)
+                    print(f"✅ CSS injected successfully for {page.url}")
+                except Exception as e:
+                    print(f"⚠️ Direct CSS injection failed for {page.url}: {str(e)}")
+
+        except Exception as e:
+            print(f"⚠️ Failed to set up CSS injection for page {page.url}: {str(e)}")
+
+    def inject_hide_password_buttons(self, context: BrowserContext) -> None:
+        """
+        Inject CSS to hide password visibility buttons across social media platforms.
+        
+        Args:
+            context: The browser context to inject styles into
+        """
+        self.inject_css_to_context(
+            context,
+            HIDE_PASSWORD_BUTTON_CSS,
+            "hide-password-buttons"
+        )
+        print("🔒 Injected CSS to hide password visibility buttons")
+
+    def inject_custom_css(self, profile_id: str, css: str, identifier: str = "custom-styles") -> bool:
+        """
+        Inject custom CSS into an active profile's browser context.
+        
+        Args:
+            profile_id: Profile ID to inject CSS into
+            css: CSS styles to inject
+            identifier: Unique identifier for the injected styles
+            
+        Returns:
+            True if successful, False if profile not found or injection failed
+        """
+        context = self.active_contexts.get(profile_id)
+        if not context:
+            print(f"❌ [{profile_id}] Profile not found in active contexts")
+            return False
+
+        try:
+            self.inject_css_to_context(context, css, identifier)
+            print(f"✅ [{profile_id}] Successfully injected custom CSS: {identifier}")
+            return True
+        except Exception as e:
+            print(f"❌ [{profile_id}] Failed to inject custom CSS: {str(e)}")
+            return False
+
     def check_adspower_connection(self) -> bool:
         """
         Check if AdsPower is running and accessible.
@@ -47,7 +162,7 @@ class AdsPowerProfileManager:
             True if AdsPower API is accessible, False otherwise
         """
         return self.adspower_client.check_connection()
-    
+
     def get_available_profiles(self, group_id: Optional[str] = None) -> List[AdsPowerProfile]:
         """
         Get all available AdsPower profiles.
@@ -59,11 +174,11 @@ class AdsPowerProfileManager:
             List of available profiles
         """
         return self.adspower_client.get_profiles(group_id)
-    
-    def login_profile(self, playwright: Playwright, profile_id: str, 
-                     username: str, password: str,
-                     target_post_url: str = None, headless: bool = True,
-                     max_retries: int = 3) -> Optional[BrowserContext]:
+
+    def login_profile(self, playwright: Playwright, profile_id: str,
+                      username: str, password: str,
+                      target_post_url: str = None, headless: bool = True,
+                      max_retries: int = 3) -> Optional[BrowserContext]:
         """
         Start an AdsPower profile and connect it with Playwright.
         
@@ -82,42 +197,42 @@ class AdsPowerProfileManager:
         if not self.check_adspower_connection():
             print(f"❌ [{profile_id}] AdsPower is not running or not accessible")
             return None
-        
+
         for attempt in range(max_retries):
             try:
                 print(f"🔄 [{profile_id}] Starting AdsPower profile (attempt {attempt + 1}/{max_retries})")
-                
+
                 # Start AdsPower profile
                 browser_data = self.adspower_client.start_profile(profile_id, headless)
                 if not browser_data:
                     print(f"❌ [{profile_id}] Failed to start AdsPower profile")
                     continue
-                
+
                 # Connect Playwright to the AdsPower browser
                 context = self._connect_playwright_to_adspower(
                     playwright, profile_id, username, password, browser_data, target_post_url
                 )
-                
+
                 if context:
                     self.active_contexts[profile_id] = context
                     print(f"✅ [{profile_id}] Successfully connected to AdsPower profile")
                     return context
-                
+
             except Exception as e:
                 print(f"❌ [{profile_id}] Error during profile login attempt {attempt + 1}: {str(e)}")
-                
+
                 if attempt < max_retries - 1:
                     wait_time = 2 ** attempt  # Exponential backoff
                     print(f"⏳ [{profile_id}] Waiting {wait_time} seconds before retry...")
                     time.sleep(wait_time)
-        
+
         print(f"🚫 [{profile_id}] All login attempts failed")
         return None
-    
+
     def _connect_playwright_to_adspower(self, playwright: Playwright, profile_id: str,
-                                       username: str, password: str,
-                                       browser_data: Dict[str, Any], 
-                                       target_post_url: str = None) -> Optional[BrowserContext]:
+                                        username: str, password: str,
+                                        browser_data: Dict[str, Any],
+                                        target_post_url: str = None) -> Optional[BrowserContext]:
         """
         Connect Playwright to an AdsPower browser instance.
         
@@ -138,50 +253,54 @@ class AdsPowerProfileManager:
             if not ws_endpoint:
                 print(f"❌ [{profile_id}] No WebSocket endpoint found in AdsPower response")
                 return None
-            
+
             # Connect Playwright to the browser
             browser = playwright.chromium.connect_over_cdp(ws_endpoint)
-            
+
             # Get the default context (AdsPower profile context)
             contexts = browser.contexts
             if not contexts:
                 print(f"❌ [{profile_id}] No browser contexts available")
                 browser.close()
                 return None
-            
+
             context = contexts[0]
-            
+
             # Get or create a page
             pages = context.pages
             if pages:
                 page = pages[0]
             else:
                 page = context.new_page()
-            
+
             # Navigate to Instagram login if not already there
             current_url = page.url
             if "instagram.com" not in current_url:
                 print(f"🌐 [{profile_id}] Navigating to Instagram...")
                 page.goto("https://www.instagram.com/", timeout=30000)
-            
+
+            # Inject CSS to hide password buttons if enabled
+            if self.should_inject_hide_password_css:
+                self.inject_hide_password_buttons(context)
+
             # Check if already logged in or handle login
             if self._handle_instagram_login(page, profile_id, username, password):
                 # Navigate to target post if provided
                 if target_post_url:
                     self._navigate_to_post(page, target_post_url)
-                
+
                 return context
             else:
                 print(f"❌ [{profile_id}] Instagram login failed")
                 browser.close()
                 return None
-            
+
         except Exception as e:
             print(f"❌ [{profile_id}] Error connecting Playwright to AdsPower: {str(e)}")
             return None
-    
+
     def _handle_instagram_login(self, page: Page, profile_id: str,
-                               username: str, password: str) -> bool:
+                                username: str, password: str) -> bool:
         """
         Handle Instagram login process if needed.
         
@@ -199,29 +318,29 @@ class AdsPowerProfileManager:
             if self._is_already_logged_in(page):
                 print(f"✅ [{profile_id}] Already logged into Instagram")
                 return True
-            
+
             # Handle cookies popup first
             self._handle_cookies_popup(page, profile_id)
-            
+
             # Wait for potential auto-login (AdsPower may auto-fill credentials)
             print(f"⏳ [{profile_id}] Waiting for auto-login...")
             time.sleep(5)
-            
+
             # Check again if logged in after auto-login attempt
             if self._is_already_logged_in(page):
                 print(f"✅ [{profile_id}] Auto-login successful")
                 return True
-            
+
             # If still not logged in, offer automatic credential fallback
             print(f"⚠️ [{profile_id}] Auto-login failed - profile may need automatic credential fallback")
             return self._handle_credential_fallback(page, profile_id, username, password)
-            
+
         except Exception as e:
             print(f"❌ [{profile_id}] Error during Instagram login: {str(e)}")
             return False
-    
+
     def _handle_credential_fallback(self, page: Page, profile_id: str,
-                                      username: str, password: str) -> bool:
+                                    username: str, password: str) -> bool:
         """
         Handle automatic credential fallback when auto-login fails.
         
@@ -238,15 +357,16 @@ class AdsPowerProfileManager:
         if not username or not password:
             print(f"❌ [{profile_id}] No credentials available for fallback login")
             return False
-            
+
         # Check if automatic credential fallback is allowed
         if not self.allow_credential_fallback:
-            print(f"❌ [{profile_id}] Automatic credential fallback disabled - profile needs proper AdsPower configuration")
+            print(
+                f"❌ [{profile_id}] Automatic credential fallback disabled - profile needs proper AdsPower configuration")
             return False
-            
+
         try:
             print(f"🔐 [{profile_id}] Attempting automatic credential fallback with credentials...")
-            
+
             # Check if we're on a login page
             current_url = page.url
             if "instagram.com/accounts/login" not in current_url:
@@ -254,35 +374,35 @@ class AdsPowerProfileManager:
                 print(f"🌐 [{profile_id}] Navigating to login page...")
                 page.goto("https://www.instagram.com/accounts/login/", timeout=15000)
                 time.sleep(3)
-            
+
             # Wait for login form
             page.wait_for_selector('input[name="username"]', timeout=10000)
-            
+
             # Check for login form
             username_input = page.locator('input[name="username"]')
             password_input = page.locator('input[name="password"]')
-            
+
             if username_input.is_visible() and password_input.is_visible():
                 print(f"📝 [{profile_id}] Filling login credentials...")
-                
+
                 # Fill login form
                 page.fill('input[name="username"]', username)
                 page.fill('input[name="password"]', password)
-                
+
                 # Click login button
                 page.click('button[type="submit"]')
-                
+
                 # Wait for login completion
                 print(f"⏳ [{profile_id}] Waiting for login completion...")
                 return self._wait_for_login_completion(page, profile_id)
             else:
                 print(f"❌ [{profile_id}] Login form not found")
                 return False
-                
+
         except Exception as e:
             print(f"❌ [{profile_id}] Error in automatic credential fallback: {str(e)}")
             return False
-    
+
     def _wait_for_login_completion(self, page: Page, profile_id: str, timeout: int = 15000) -> bool:
         """
         Wait for login to complete and handle common post-login scenarios.
@@ -338,7 +458,7 @@ class AdsPowerProfileManager:
 
         print(f"⏰ [{profile_id}] Login completion timeout")
         return False
-    
+
     def _is_already_logged_in(self, page: Page) -> bool:
         """
         Check if user is already logged into Instagram.
@@ -360,7 +480,7 @@ class AdsPowerProfileManager:
                 return True
             except PlaywrightTimeoutError:
                 return False
-    
+
     def _handle_cookies_popup(self, page: Page, profile_id: str) -> None:
         """
         Handle Instagram cookies consent popup if it appears.
@@ -379,10 +499,10 @@ class AdsPowerProfileManager:
                 'button:has-text("Decline optional cookies")',
                 'button:has-text("Allow all cookies")'
             ]
-            
+
             print(f"🍪 [{profile_id}] Checking for cookies popup...")
             time.sleep(2)
-            
+
             for selector in cookie_selectors:
                 try:
                     if page.locator(selector).is_visible(timeout=2000):
@@ -396,12 +516,12 @@ class AdsPowerProfileManager:
                 except Exception as e:
                     print(f"⚠️ [{profile_id}] Error with selector {selector}: {str(e)}")
                     continue
-            
+
             print(f"ℹ️ [{profile_id}] No cookies popup found or already handled")
-            
+
         except Exception as e:
             print(f"⚠️ [{profile_id}] Error handling cookies popup: {str(e)}")
-    
+
     def _navigate_to_post(self, page: Page, post_url: str) -> bool:
         """
         Navigate to a specific Instagram post.
@@ -416,19 +536,19 @@ class AdsPowerProfileManager:
         try:
             print(f"🎯 Navigating to post: {post_url}")
             page.goto(post_url, timeout=15000)
-            
+
             # Wait for post to load
             page.wait_for_selector('article', timeout=10000)
             print(f"✅ Post loaded successfully")
             return True
-            
+
         except PlaywrightTimeoutError:
             print(f"⏰ Timeout loading post: {post_url}")
             return False
         except Exception as e:
             print(f"❌ Error navigating to post: {str(e)}")
             return False
-    
+
     def close_context(self, profile_id: str) -> None:
         """
         Close browser context and stop AdsPower profile.
@@ -443,17 +563,17 @@ class AdsPowerProfileManager:
                 context.close()
                 del self.active_contexts[profile_id]
                 print(f"🔒 [{profile_id}] Playwright context closed")
-            
+
             # Stop AdsPower profile
             success = self.adspower_client.stop_profile(profile_id)
             if success:
                 print(f"🔒 [{profile_id}] AdsPower profile stopped")
             else:
                 print(f"⚠️ [{profile_id}] Failed to stop AdsPower profile")
-                
+
         except Exception as e:
             print(f"⚠️ [{profile_id}] Error closing context: {str(e)}")
-    
+
     def get_profile_status(self, profile_id: str) -> str:
         """
         Get the current status of an AdsPower profile.
@@ -465,14 +585,14 @@ class AdsPowerProfileManager:
             Profile status string
         """
         return self.adspower_client.check_profile_status(profile_id)
-    
+
     def cleanup_all_contexts(self) -> None:
         """
         Close all active contexts and stop all profiles.
         """
         print("🔒 Cleaning up all active AdsPower contexts...")
-        
+
         for profile_id in list(self.active_contexts.keys()):
             self.close_context(profile_id)
-        
-        print("✅ All AdsPower contexts cleaned up") 
+
+        print("✅ All AdsPower contexts cleaned up")

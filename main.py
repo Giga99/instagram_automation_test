@@ -13,13 +13,13 @@ import os
 import sys
 import time
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List
 
 from playwright.sync_api import sync_playwright, Playwright
 
 from src.integrations.adspower.config import load_adspower_profiles
 from src.integrations.adspower.profile_manager import AdsPowerProfileManager
-from src.integrations.instagram.poster import post_comment, simulate_post, POST_COMMENT
+from src.integrations.instagram.poster import post_comment, simulate_post
 from src.integrations.openai.comment_gen import generate_comment, validate_comment
 from src.integrations.telegram.notifier import send_completion_notification, send_error_notification, \
     send_progress_notification
@@ -134,7 +134,7 @@ def process_single_profile(playwright: Playwright, profile: AutomationProfile,
         print(f"💬 [{profile_id}] Posting comment...")
         send_progress_notification(profile_id, "Posting comment...", comment)
 
-        if POST_COMMENT:
+        if config.post_comment:
             post_success = post_comment(context, comment, target_post_url)
         else:
             post_success = simulate_post(profile_id, comment, target_post_url)
@@ -248,7 +248,7 @@ def main():
                     # Add extra delay for different groups
                     current_group = current_profile.group.name if current_profile.group else 'default'
                     next_group = next_profile.group.name if next_profile and next_profile.group else 'default'
-                    
+
                     if next_profile and current_group != next_group:
                         delay += 10  # Extra 10 seconds for group switching
                         print(f"🔄 Switching from group '{current_group}' to '{next_group}'")

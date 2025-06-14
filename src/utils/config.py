@@ -44,7 +44,7 @@ class Config:
 
     @property
     def post_comment(self) -> bool:
-        return os.getenv("POST_COMMENT", "true").lower() == "true"
+        return os.getenv("POST_COMMENT", "false").lower() == "true"
 
     # Telegram Configuration
     @property

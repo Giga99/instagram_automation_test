@@ -11,6 +11,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional, Dict, Any
 
+from src.utils.logger import get_current_timestamp
+
 
 class ProfileStatus(Enum):
     """Profile health status."""
@@ -39,13 +41,13 @@ class ProxyConfig:
     proxy_url: Optional[str] = None
     proxy_soft: Optional[str] = None
     global_config: Optional[str] = "0"
-    
+
     @classmethod
     def from_adspower(cls, adspower_proxy_config) -> Optional['ProxyConfig']:
         """Create ProxyConfig from AdsPower proxy configuration."""
         if not adspower_proxy_config:
             return None
-            
+
         return cls(
             proxy_id=adspower_proxy_config.id,
             proxy_type=adspower_proxy_config.proxy_type.value if adspower_proxy_config.proxy_type else None,
@@ -65,13 +67,13 @@ class ProfileGroup:
     id: str
     name: Optional[str] = None
     remark: Optional[str] = None
-    
+
     @classmethod
     def from_adspower(cls, adspower_group) -> Optional['ProfileGroup']:
         """Create ProfileGroup from AdsPower group."""
         if not adspower_group:
             return None
-            
+
         return cls(
             id=adspower_group.id,
             name=adspower_group.name,
@@ -88,7 +90,7 @@ class ProfileSettings:
     retry_attempts: int = 3
     max_comments_per_session: int = 5
     headless: bool = True
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for backward compatibility."""
         return {
@@ -111,7 +113,7 @@ class ProfileHealth:
     successful_attempts: int = 0
     failed_attempts: int = 0
     last_error: Optional[str] = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for backward compatibility."""
         return {
@@ -123,7 +125,7 @@ class ProfileHealth:
             "failed_attempts": self.failed_attempts,
             "last_error": self.last_error
         }
-    
+
     def update_success(self):
         """Update health metrics after successful operation."""
         self.total_attempts += 1
@@ -131,7 +133,7 @@ class ProfileHealth:
         self.success_rate = (self.successful_attempts / self.total_attempts) * 100
         self.last_used = datetime.now()
         self.last_error = None
-        
+
         # Update status based on success rate
         if self.success_rate >= 90:
             self.status = ProfileStatus.HEALTHY
@@ -139,7 +141,7 @@ class ProfileHealth:
             self.status = ProfileStatus.WARNING
         else:
             self.status = ProfileStatus.UNHEALTHY
-    
+
     def update_failure(self, error_message: str):
         """Update health metrics after failed operation."""
         self.total_attempts += 1
@@ -147,7 +149,7 @@ class ProfileHealth:
         self.success_rate = (self.successful_attempts / self.total_attempts) * 100
         self.last_used = datetime.now()
         self.last_error = error_message
-        
+
         # Update status based on success rate
         if self.success_rate >= 90:
             self.status = ProfileStatus.HEALTHY
@@ -172,20 +174,20 @@ class AutomationProfile:
     source: ProfileSource = ProfileSource.MANUAL
     enabled: bool = True
     priority: int = 1
-    
+
     # Optional fields
     domain_name: Optional[str] = None
     group: Optional[ProfileGroup] = None
     proxy_config: Optional[ProxyConfig] = None
-    
+
     # Automation configuration
     settings: ProfileSettings = field(default_factory=ProfileSettings)
     health: ProfileHealth = field(default_factory=ProfileHealth)
-    
+
     # Timestamps
     created_at: Optional[datetime] = None
     last_open_time: Optional[datetime] = None
-    
+
     @classmethod
     def from_adspower(cls, adspower_profile) -> 'AutomationProfile':
         """Create AutomationProfile from AdsPower profile dataclass."""
@@ -201,15 +203,15 @@ class AutomationProfile:
             created_at=adspower_profile.created_at,
             last_open_time=adspower_profile.last_open_time
         )
-    
+
     def update_success(self):
         """Update profile health after successful operation."""
         self.health.update_success()
-    
+
     def update_failure(self, error_message: str):
         """Update profile health after failed operation."""
         self.health.update_failure(error_message)
-    
+
     def is_healthy(self) -> bool:
         """Check if profile is in healthy state."""
         return self.health.status == ProfileStatus.HEALTHY
@@ -222,8 +224,8 @@ class ProfileResult:
     success: bool
     comment: str = ""
     error: Optional[str] = None
-    timestamp: Optional[datetime] = field(default_factory=datetime.now)
-    
+    timestamp: Optional[str] = get_current_timestamp()
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for backward compatibility."""
         return {
@@ -232,4 +234,4 @@ class ProfileResult:
             "comment": self.comment,
             "error": self.error,
             "timestamp": self.timestamp
-        } 
+        }
